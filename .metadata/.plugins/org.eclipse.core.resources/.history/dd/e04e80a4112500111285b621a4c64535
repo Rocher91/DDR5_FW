@@ -1,0 +1,475 @@
+/*
+ * DDR5_Board_Clock.c
+ *
+ *  Created on: Mar 8, 2026
+ *      Author: Xavi
+ */
+
+#include "DDR5_Board.h"
+
+#include "stm32h5xx_ll_bus.h"
+#include "stm32h5xx_ll_rcc.h"
+#include "stm32h5xx_ll_system.h"
+#include "stm32h5xx_ll_utils.h"
+#include "stm32h5xx_ll_pwr.h"
+#include "system_stm32h5xx.h"
+#include <stdint.h>
+//#include "stm32h5xx_ll_flash.h"
+
+/*
+ * Clock plan
+ * ----------
+ * HSI = 64 MHz
+ *
+ * PLL1 -> SYSCLK = 125 MHz
+ * PLL3 -> I3C1 kernel clock = 125 MHz
+ *
+ * I2C1  kernel clock = HSI
+ * USART3 kernel clock = HSI
+ */
+
+#define DDR5_HSI_FREQ_HZ          64000000UL
+#define DDR5_SYSCLK_FREQ_HZ       125000000UL
+
+/* PLL1: 64 / 4 = 16 MHz, 16 * 125 = 2000 MHz, 2000 / 16 = 125 MHz */
+#define DDR5_PLL1_M               4U
+#define DDR5_PLL1_N               16U
+#define DDR5_PLL1_P               2U
+#define DDR5_PLL1_Q               2U
+#define DDR5_PLL1_R               2U
+
+/* PLL3: same as PLL1, dedicated to I3C1 */
+#define DDR5_PLL3_M               4U
+#define DDR5_PLL3_N               10U
+#define DDR5_PLL3_P               2U
+#define DDR5_PLL3_Q               2U
+#define DDR5_PLL3_R               2U
+
+
+
+
+__attribute__((noinline))
+void Debug_Clocks_And_Flash_LL(void)
+{
+    /* ================= REGISTROS CRUDOS ================= */
+    volatile uint32_t reg_cr         = RCC->CR;
+    volatile uint32_t reg_cfgr1      = RCC->CFGR1;
+    volatile uint32_t reg_cfgr2      = RCC->CFGR2;
+    volatile uint32_t reg_pll1cfgr   = RCC->PLL1CFGR;
+    volatile uint32_t reg_pll1divr   = RCC->PLL1DIVR;
+    volatile uint32_t reg_pll1fracr  = RCC->PLL1FRACR;
+    volatile uint32_t reg_pll3cfgr   = RCC->PLL3CFGR;
+    volatile uint32_t reg_pll3divr   = RCC->PLL3DIVR;
+    volatile uint32_t reg_pll3fracr  = RCC->PLL3FRACR;
+    volatile uint32_t reg_flash_acr  = FLASH->ACR;
+    volatile uint32_t reg_pwr_voscr  = PWR->VOSCR;
+    volatile uint32_t reg_pwr_vossr  = PWR->VOSSR;
+
+
+
+    volatile uint32_t vos_used = vos_act;
+
+    /* ================= HSI ================= */
+    volatile double hsi_nom_hz = 64000000.0;
+
+    volatile uint32_t hsidiv_ll = LL_RCC_HSI_GetDivider();
+
+    volatile uint32_t hsi_divider = 1U;
+    switch (hsidiv_ll)
+    {
+        case LL_RCC_HSI_DIV_1: hsi_divider = 1U; break;
+        case LL_RCC_HSI_DIV_2: hsi_divider = 2U; break;
+        case LL_RCC_HSI_DIV_4: hsi_divider = 4U; break;
+        case LL_RCC_HSI_DIV_8: hsi_divider = 8U; break;
+        default:               hsi_divider = 1U; break;
+    }
+
+    volatile double hsi_hz = hsi_nom_hz / (double)hsi_divider;
+
+    /* Estados de osciladores/PLL */
+    volatile uint32_t hsi_ready  = LL_RCC_HSI_IsReady();
+    volatile uint32_t pll1_ready = LL_RCC_PLL1_IsReady();
+    volatile uint32_t pll3_ready = LL_RCC_PLL3_IsReady();
+
+    /* ================= PLL1 ================= */
+    volatile uint32_t pll1_src_sel = (reg_pll1cfgr  >> RCC_PLL1CFGR_PLL1SRC_Pos)   & 0x3U;
+    volatile uint32_t pll1_m_raw   = (reg_pll1cfgr  >> RCC_PLL1CFGR_PLL1M_Pos)      & 0x3FU;
+    volatile uint32_t pll1_n_raw   = (reg_pll1divr  >> RCC_PLL1DIVR_PLL1N_Pos)      & 0x1FFU;
+    volatile uint32_t pll1_p_raw   = (reg_pll1divr  >> RCC_PLL1DIVR_PLL1P_Pos)      & 0x7FU;
+    volatile uint32_t pll1_q_raw   = (reg_pll1divr  >> RCC_PLL1DIVR_PLL1Q_Pos)      & 0x7FU;
+    volatile uint32_t pll1_r_raw   = (reg_pll1divr  >> RCC_PLL1DIVR_PLL1R_Pos)      & 0x7FU;
+    volatile uint32_t pll1_fracn   = (reg_pll1fracr >> RCC_PLL1FRACR_PLL1FRACN_Pos) & 0x1FFFU;
+    volatile uint32_t pll1_fracen  = (reg_pll1cfgr  >> RCC_PLL1CFGR_PLL1FRACEN_Pos) & 0x1U;
+
+    volatile uint32_t pll1_m = pll1_m_raw;
+    volatile uint32_t pll1_n = pll1_n_raw;
+    volatile uint32_t pll1_p = pll1_p_raw + 1U;
+    volatile uint32_t pll1_q = pll1_q_raw + 1U;
+    volatile uint32_t pll1_r = pll1_r_raw + 1U;
+
+    volatile double pll1_src_hz = 0.0;
+    volatile double pll1_ref_hz = 0.0;
+    volatile double pll1_vco_hz = 0.0;
+    volatile double pll1_p_hz   = 0.0;
+    volatile double pll1_q_hz   = 0.0;
+    volatile double pll1_r_hz   = 0.0;
+
+    /* En H5: 1 = HSI, 2 = CSI, 3 = HSE */
+    if (pll1_src_sel == 1U)
+        pll1_src_hz = hsi_hz;
+    else if (pll1_src_sel == 2U)
+        pll1_src_hz = 4000000.0;
+    else if (pll1_src_sel == 3U)
+        pll1_src_hz = 0.0; /* Ajusta si quieres contemplar HSE real */
+
+    if (pll1_m != 0U && pll1_src_hz > 0.0)
+    {
+        pll1_ref_hz = pll1_src_hz / (double)pll1_m;
+
+        if (pll1_fracen)
+            pll1_vco_hz = pll1_ref_hz * ((double)pll1_n + ((double)pll1_fracn / 8192.0));
+        else
+            pll1_vco_hz = pll1_ref_hz * (double)pll1_n;
+
+        pll1_p_hz = pll1_vco_hz / (double)pll1_p;
+        pll1_q_hz = pll1_vco_hz / (double)pll1_q;
+        pll1_r_hz = pll1_vco_hz / (double)pll1_r;
+    }
+
+    /* ================= PLL3 ================= */
+    volatile uint32_t pll3_src_sel = (reg_pll3cfgr  >> RCC_PLL3CFGR_PLL3SRC_Pos)   & 0x3U;
+    volatile uint32_t pll3_m_raw   = (reg_pll3cfgr  >> RCC_PLL3CFGR_PLL3M_Pos)      & 0x3FU;
+    volatile uint32_t pll3_n_raw   = (reg_pll3divr  >> RCC_PLL3DIVR_PLL3N_Pos)      & 0x1FFU;
+    volatile uint32_t pll3_p_raw   = (reg_pll3divr  >> RCC_PLL3DIVR_PLL3P_Pos)      & 0x7FU;
+    volatile uint32_t pll3_q_raw   = (reg_pll3divr  >> RCC_PLL3DIVR_PLL3Q_Pos)      & 0x7FU;
+    volatile uint32_t pll3_r_raw   = (reg_pll3divr  >> RCC_PLL3DIVR_PLL3R_Pos)      & 0x7FU;
+    volatile uint32_t pll3_fracn   = (reg_pll3fracr >> RCC_PLL3FRACR_PLL3FRACN_Pos) & 0x1FFFU;
+    volatile uint32_t pll3_fracen  = (reg_pll3cfgr  >> RCC_PLL3CFGR_PLL3FRACEN_Pos) & 0x1U;
+
+    volatile uint32_t pll3_m = pll3_m_raw;
+    volatile uint32_t pll3_n = pll3_n_raw;
+    volatile uint32_t pll3_p = pll3_p_raw + 1U;
+    volatile uint32_t pll3_q = pll3_q_raw + 1U;
+    volatile uint32_t pll3_r = pll3_r_raw + 1U;
+
+    volatile double pll3_src_hz = 0.0;
+    volatile double pll3_ref_hz = 0.0;
+    volatile double pll3_vco_hz = 0.0;
+    volatile double pll3_p_hz   = 0.0;
+    volatile double pll3_q_hz   = 0.0;
+    volatile double pll3_r_hz   = 0.0;
+
+    if (pll3_src_sel == 1U)
+        pll3_src_hz = hsi_hz;
+    else if (pll3_src_sel == 2U)
+        pll3_src_hz = 4000000.0;
+    else if (pll3_src_sel == 3U)
+        pll3_src_hz = 0.0;
+
+    if (pll3_m != 0U && pll3_src_hz > 0.0)
+    {
+        pll3_ref_hz = pll3_src_hz / (double)pll3_m;
+
+        if (pll3_fracen)
+            pll3_vco_hz = pll3_ref_hz * ((double)pll3_n + ((double)pll3_fracn / 8192.0));
+        else
+            pll3_vco_hz = pll3_ref_hz * (double)pll3_n;
+
+        pll3_p_hz = pll3_vco_hz / (double)pll3_p;
+        pll3_q_hz = pll3_vco_hz / (double)pll3_q;
+        pll3_r_hz = pll3_vco_hz / (double)pll3_r;
+    }
+
+    /* ================= SYSCLK / HCLK / PCLK ================= */
+    volatile uint32_t sysclk_src_ll = LL_RCC_GetSysClkSource();
+
+    volatile double sysclk_hz = 0.0;
+    switch (sysclk_src_ll)
+    {
+        case LL_RCC_SYS_CLKSOURCE_STATUS_HSI:  sysclk_hz = hsi_hz;      break;
+        case LL_RCC_SYS_CLKSOURCE_STATUS_CSI:  sysclk_hz = 4000000.0;   break;
+        case LL_RCC_SYS_CLKSOURCE_STATUS_HSE:  sysclk_hz = 0.0;         break;
+        case LL_RCC_SYS_CLKSOURCE_STATUS_PLL1: sysclk_hz = pll1_p_hz;   break;
+        default:                               sysclk_hz = 0.0;         break;
+    }
+
+    volatile uint32_t ahb_prescaler_ll  = LL_RCC_GetAHBPrescaler();
+    volatile uint32_t apb1_prescaler_ll = LL_RCC_GetAPB1Prescaler();
+    volatile uint32_t apb2_prescaler_ll = LL_RCC_GetAPB2Prescaler();
+    volatile uint32_t apb3_prescaler_ll = LL_RCC_GetAPB3Prescaler();
+
+    volatile uint32_t hpre_div  = 1U;
+    volatile uint32_t ppre1_div = 1U;
+    volatile uint32_t ppre2_div = 1U;
+    volatile uint32_t ppre3_div = 1U;
+
+    switch (ahb_prescaler_ll)
+    {
+        case 0x00:   hpre_div = 1U;   break;
+        case 0x08:   hpre_div = 2U;   break;
+        case 0x09:   hpre_div = 4U;   break;
+        case 0x0A:   hpre_div = 8U;   break;
+        case 0x0B:   hpre_div = 16U;  break;
+        case 0x0C:   hpre_div = 64U;  break;
+        case 0x0D:   hpre_div = 128U; break;
+        case 0x0E:   hpre_div = 256U; break;
+        case 0x0F:   hpre_div = 512U; break;
+        default:     hpre_div = 1U;   break;
+    }
+
+    switch (apb1_prescaler_ll)
+    {
+        case LL_RCC_APB1_DIV_1:  ppre1_div = 1U;  break;
+        case LL_RCC_APB1_DIV_2:  ppre1_div = 2U;  break;
+        case LL_RCC_APB1_DIV_4:  ppre1_div = 4U;  break;
+        case LL_RCC_APB1_DIV_8:  ppre1_div = 8U;  break;
+        case LL_RCC_APB1_DIV_16: ppre1_div = 16U; break;
+        default:                 ppre1_div = 1U;  break;
+    }
+
+    switch (apb2_prescaler_ll)
+    {
+        case LL_RCC_APB2_DIV_1:  ppre2_div = 1U;  break;
+        case LL_RCC_APB2_DIV_2:  ppre2_div = 2U;  break;
+        case LL_RCC_APB2_DIV_4:  ppre2_div = 4U;  break;
+        case LL_RCC_APB2_DIV_8:  ppre2_div = 8U;  break;
+        case LL_RCC_APB2_DIV_16: ppre2_div = 16U; break;
+        default:                 ppre2_div = 1U;  break;
+    }
+
+    switch (apb3_prescaler_ll)
+    {
+        case LL_RCC_APB3_DIV_1:  ppre3_div = 1U;  break;
+        case LL_RCC_APB3_DIV_2:  ppre3_div = 2U;  break;
+        case LL_RCC_APB3_DIV_4:  ppre3_div = 4U;  break;
+        case LL_RCC_APB3_DIV_8:  ppre3_div = 8U;  break;
+        case LL_RCC_APB3_DIV_16: ppre3_div = 16U; break;
+        default:                 ppre3_div = 1U;  break;
+    }
+
+    volatile double hclk_hz  = sysclk_hz / (double)hpre_div;
+    volatile double pclk1_hz = hclk_hz   / (double)ppre1_div;
+    volatile double pclk2_hz = hclk_hz   / (double)ppre2_div;
+    volatile double pclk3_hz = hclk_hz   / (double)ppre3_div;
+
+    /* Timers en APB: x2 si prescaler > 1 */
+    volatile double tim_pclk1_hz = (ppre1_div == 1U) ? pclk1_hz : (2.0 * pclk1_hz);
+    volatile double tim_pclk2_hz = (ppre2_div == 1U) ? pclk2_hz : (2.0 * pclk2_hz);
+    volatile double tim_pclk3_hz = (ppre3_div == 1U) ? pclk3_hz : (2.0 * pclk3_hz);
+
+    /* ================= FLASH ================= */
+    volatile uint32_t flash_latency_ws = LL_FLASH_GetLatency();
+    volatile uint32_t flash_prften     = LL_FLASH_IsPrefetchEnabled();
+    volatile uint32_t flash_wrhighfreq = (reg_flash_acr >> FLASH_ACR_WRHIGHFREQ_Pos) & 0x3U;
+
+    /* ================= VOS ================= */
+    volatile uint32_t vos_cfg = LL_PWR_GetRegulVoltageScaling();
+    volatile uint32_t vosrdy    = (reg_pwr_vossr >> PWR_VOSSR_VOSRDY_Pos) & 0x1U;
+    volatile uint32_t actvosrdy = (reg_pwr_vossr >> PWR_VOSSR_ACTVOSRDY_Pos) & 0x1U;
+    volatile uint32_t vos_act = (reg_pwr_vosr >> PWR_VOSSR_ACTVOS_Pos) & 0x3U;
+
+
+    /* Normalización práctica a 0..3 */
+    volatile uint32_t vos_used = vos_act;
+
+    volatile uint32_t flash_expected_ws_from_hclk_vos = 0xFFFFFFFFU;
+
+    if (vos_used == 3U) /* VOS3 */
+    {
+        if      (hclk_hz <=  20000000.0) flash_expected_ws_from_hclk_vos = 0U;
+        else if (hclk_hz <=  40000000.0) flash_expected_ws_from_hclk_vos = 1U;
+        else if (hclk_hz <=  60000000.0) flash_expected_ws_from_hclk_vos = 2U;
+        else if (hclk_hz <=  80000000.0) flash_expected_ws_from_hclk_vos = 3U;
+        else if (hclk_hz <= 100000000.0) flash_expected_ws_from_hclk_vos = 4U;
+    }
+    else if (vos_used == 2U) /* VOS2 */
+    {
+        if      (hclk_hz <=  30000000.0) flash_expected_ws_from_hclk_vos = 0U;
+        else if (hclk_hz <=  60000000.0) flash_expected_ws_from_hclk_vos = 1U;
+        else if (hclk_hz <=  90000000.0) flash_expected_ws_from_hclk_vos = 2U;
+        else if (hclk_hz <= 120000000.0) flash_expected_ws_from_hclk_vos = 3U;
+        else if (hclk_hz <= 150000000.0) flash_expected_ws_from_hclk_vos = 4U;
+    }
+    else if (vos_used == 1U) /* VOS1 */
+    {
+        if      (hclk_hz <=  34000000.0) flash_expected_ws_from_hclk_vos = 0U;
+        else if (hclk_hz <=  68000000.0) flash_expected_ws_from_hclk_vos = 1U;
+        else if (hclk_hz <= 102000000.0) flash_expected_ws_from_hclk_vos = 2U;
+        else if (hclk_hz <= 136000000.0) flash_expected_ws_from_hclk_vos = 3U;
+        else if (hclk_hz <= 170000000.0) flash_expected_ws_from_hclk_vos = 4U;
+        else if (hclk_hz <= 200000000.0) flash_expected_ws_from_hclk_vos = 5U;
+    }
+    else if (vos_used == 0U) /* VOS0 */
+    {
+        if      (hclk_hz <=  42000000.0) flash_expected_ws_from_hclk_vos = 0U;
+        else if (hclk_hz <=  84000000.0) flash_expected_ws_from_hclk_vos = 1U;
+        else if (hclk_hz <= 126000000.0) flash_expected_ws_from_hclk_vos = 2U;
+        else if (hclk_hz <= 168000000.0) flash_expected_ws_from_hclk_vos = 3U;
+        else if (hclk_hz <= 210000000.0) flash_expected_ws_from_hclk_vos = 4U;
+        else if (hclk_hz <= 250000000.0) flash_expected_ws_from_hclk_vos = 5U;
+    }
+
+    volatile uint32_t flash_ws_match = 0U;
+    if (flash_expected_ws_from_hclk_vos != 0xFFFFFFFFU)
+    {
+        flash_ws_match = (flash_latency_ws == flash_expected_ws_from_hclk_vos) ? 1U : 0U;
+    }
+
+    __asm volatile("" ::: "memory");
+}
+static void DDR5_Clock_SetVoltageScale(void)
+{
+
+
+    /*
+     * VOS1 for comfortable margin at 125 MHz.
+     * Verify enum name against your installed CubeH5 LL version if needed.
+     */
+    LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
+
+    while (LL_PWR_IsActiveFlag_VOS() == 0U)
+    {
+    }
+}
+
+static void DDR5_Clock_SetFlashLatency(void)
+{
+    /*
+     * Conservative for 125 MHz bring-up.
+     * If your Cube/part requires a different latency, adjust here.
+     */
+    LL_FLASH_SetLatency(LL_FLASH_LATENCY_4);
+
+    while (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_4)
+    {
+    }
+}
+
+static void DDR5_Clock_InitSafeHSI(void)
+{
+    /* Enable HSI */
+    LL_RCC_HSI_Enable();
+    while (LL_RCC_HSI_IsReady() != 1U)
+    {
+    }
+
+    /* Use HSI as SYSCLK */
+    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
+    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI)
+    {
+    }
+
+    /* Safe prescalers */
+    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+    LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
+    LL_RCC_SetAPB3Prescaler(LL_RCC_APB3_DIV_1);
+
+    uint32_t SystemCoreClock = DDR5_HSI_FREQ_HZ;
+    SysTick_Config(SystemCoreClock / 1000U);
+
+}
+
+static void DDR5_PLL1_Config(void)
+{
+    if (LL_RCC_PLL1_IsReady() != 0U)
+    {
+        LL_RCC_PLL1_Disable();
+        while (LL_RCC_PLL1_IsReady() != 0U)
+        {
+        }
+    }
+
+    LL_RCC_PLL1_SetSource(LL_RCC_PLL1SOURCE_HSI);
+
+    LL_RCC_PLL1_SetM(DDR5_PLL1_M);
+    LL_RCC_PLL1_SetN(DDR5_PLL1_N);
+    LL_RCC_PLL1_SetP(DDR5_PLL1_P);
+    LL_RCC_PLL1_SetQ(DDR5_PLL1_Q);
+    LL_RCC_PLL1_SetR(DDR5_PLL1_R);
+
+    LL_RCC_PLL1_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
+    LL_RCC_PLL1_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
+
+    LL_RCC_PLL1FRACN_Disable();
+
+    LL_RCC_PLL1P_Enable();
+    LL_RCC_PLL1Q_Enable();
+    LL_RCC_PLL1R_Enable();
+
+    LL_RCC_PLL1_Enable();
+    while (LL_RCC_PLL1_IsReady() != 1U)
+    {
+    }
+}
+
+static void DDR5_PLL3_Config(void)
+{
+    if (LL_RCC_PLL3_IsReady() != 0U)
+    {
+        LL_RCC_PLL3_Disable();
+        while (LL_RCC_PLL3_IsReady() != 0U)
+        {
+        }
+    }
+
+    LL_RCC_PLL3_SetSource(LL_RCC_PLL3SOURCE_HSI);
+
+    LL_RCC_PLL3_SetM(DDR5_PLL3_M);
+    LL_RCC_PLL3_SetN(DDR5_PLL3_N);
+    LL_RCC_PLL3_SetP(DDR5_PLL3_P);
+    LL_RCC_PLL3_SetQ(DDR5_PLL3_Q);
+    LL_RCC_PLL3_SetR(DDR5_PLL3_R);
+
+    LL_RCC_PLL3_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
+    LL_RCC_PLL3_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
+
+    LL_RCC_PLL3FRACN_Disable();
+
+    LL_RCC_PLL3P_Disable();
+    LL_RCC_PLL3Q_Disable();
+    LL_RCC_PLL3R_Enable();
+
+    LL_RCC_PLL3_Enable();
+    while (LL_RCC_PLL3_IsReady() != 1U)
+    {
+    }
+}
+
+
+
+void DDR5_Clock_Init(void)
+{
+    DDR5_Clock_InitSafeHSI();
+
+    DDR5_Clock_SetVoltageScale();
+    DDR5_Clock_SetFlashLatency();
+
+    DDR5_PLL1_Config();
+    DDR5_PLL3_Config();
+
+    /* Main bus prescalers */
+    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+    LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
+    LL_RCC_SetAPB3Prescaler(LL_RCC_APB3_DIV_1);
+
+    /* Peripheral kernel clocks
+     *
+     * NOTE:
+     * These LL macro names can vary slightly between CubeH5 versions.
+     * If any name fails, check stm32h5xx_ll_rcc.h and adjust.
+     */
+    //LL_RCC_SetI3CClockSource(LL_RCC_I3C1_CLKSOURCE_PLL3R);
+    //LL_RCC_SetI2CClockSource(LL_RCC_I2C1_CLKSOURCE_HSI);
+
+    /* SYSCLK <- PLL1 */
+    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL1);
+    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL1)
+    {
+    }
+
+    uint32_t SystemCoreClock = DDR5_SYSCLK_FREQ_HZ;
+    SysTick_Config(DDR5_SYSCLK_FREQ_HZ / 1000U);
+
+}

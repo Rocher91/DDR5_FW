@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;1_GPIO/Bsp/src/system_stm32h5xx.c&apos;" deleteContents="false" description="Delete resource &apos;1_GPIO/Bsp/src/system_stm32h5xx.c&apos;" element1="/1_GPIO/Bsp/src/system_stm32h5xx.c" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1774094089857"/>
+</session>

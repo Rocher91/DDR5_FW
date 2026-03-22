@@ -1,0 +1,13 @@
+/*
+ * nhd0420_i2c.h
+ *
+ *  Created on: Mar 21, 2026
+ *      Author: Xavi
+ */
+
+#ifndef SRC_NHD0420_I2C_H_
+#define SRC_NHD0420_I2C_H_
+
+
+
+#endif /* SRC_NHD0420_I2C_H_ */
