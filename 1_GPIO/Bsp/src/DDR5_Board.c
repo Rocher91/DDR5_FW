@@ -129,6 +129,8 @@ void DDR5_GPIO_Init(void)
      * I2C LCD (PB6 / PB7)
      * Open-drain, external pull-ups required
      * ========================================================= */
+
+    /*
     DDR5_GPIO_Init_AF(LCD_I2C_SCL_PORT, LCD_I2C_SCL_PIN,
                       LL_GPIO_AF_4,
                       LL_GPIO_OUTPUT_OPENDRAIN,
@@ -140,6 +142,8 @@ void DDR5_GPIO_Init(void)
                       LL_GPIO_OUTPUT_OPENDRAIN,
                       LL_GPIO_SPEED_FREQ_HIGH,
                       LL_GPIO_PULL_NO);
+
+    */
 
     /* =========================================================
      * Menu buttons: input + pull-up
@@ -335,6 +339,7 @@ void DDR5_GPIO_Init(void)
                           LL_GPIO_PULL_NO);
 }
 
+
 #define DDR5_EXTI_PORT_A   0x00U
 #define DDR5_EXTI_PORT_B   0x01U
 #define DDR5_EXTI_PORT_C   0x02U
@@ -355,35 +360,66 @@ static void DDR5_EXTI_SelectPort(uint32_t line, uint32_t portsel)
 }
 int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit)
 {
-    uint32_t timeout = 100000U;
+    uint32_t timeout;
+    uint8_t dummy = 0x00;
 
+    /* Limpiar flags previos */
+    if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+        LL_I2C_ClearFlag_STOP(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+        LL_I2C_ClearFlag_NACK(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_BERR(I2Cx))
+        LL_I2C_ClearFlag_BERR(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
+        LL_I2C_ClearFlag_ARLO(I2Cx);
+
+    timeout = 100000U;
     while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
     {
-        if (--timeout == 0U) return -1;
+        if (--timeout == 0U)
+            return -1;
     }
 
     LL_I2C_HandleTransfer(I2Cx,
                           (uint32_t)(addr_7bit << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
-                          0,
+                          1,
                           LL_I2C_MODE_AUTOEND,
                           LL_I2C_GENERATE_START_WRITE);
 
     timeout = 100000U;
-    while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+    while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
     {
         if (LL_I2C_IsActiveFlag_NACK(I2Cx))
         {
             LL_I2C_ClearFlag_NACK(I2Cx);
-            return -2;
+
+            if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+                LL_I2C_ClearFlag_STOP(I2Cx);
+
+            return -2; /* no ACK */
         }
 
-        if (--timeout == 0U) return -3;
+        if (--timeout == 0U)
+            return -3;
+    }
+
+    LL_I2C_TransmitData8(I2Cx, dummy);
+
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+    {
+        if (--timeout == 0U)
+            return -4;
     }
 
     LL_I2C_ClearFlag_STOP(I2Cx);
     return 0;
 }
+
 void DDR5_I2C_Scan(I2C_TypeDef *I2Cx)
 {
     char msg[32];
@@ -423,7 +459,7 @@ void DDR5_I2C1_Init(void)
 
     LL_I2C_Disable(I2C1);
 
-    LL_I2C_SetTiming(I2C1, 0x403032CA);
+    LL_I2C_SetTiming(I2C1, 0x40F338B3);
 
     LL_I2C_SetOwnAddress1(I2C1, 0x00, LL_I2C_OWNADDRESS1_7BIT);
     LL_I2C_DisableOwnAddress1(I2C1);
@@ -443,32 +479,117 @@ int8_t DDR5_I2C_Write(I2C_TypeDef *I2Cx,
                       uint8_t *data,
                       uint16_t size)
 {
-    /* Esperar que el bus esté libre */
-    while (LL_I2C_IsActiveFlag_BUSY(I2Cx));
+    uint32_t timeout;
 
-    /* Start + dirección + write */
+    if ((I2Cx == NULL) || ((data == NULL) && (size > 0U)))
+        return -1;
+
+    if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+    if (LL_I2C_IsActiveFlag_NACK(I2Cx)) LL_I2C_ClearFlag_NACK(I2Cx);
+
+    timeout = 100000U;
+    while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
+    {
+        if (--timeout == 0U) return -2;
+    }
+
     LL_I2C_HandleTransfer(I2Cx,
-                          dev_addr << 1,
+                          (uint32_t)(dev_addr << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
-                          size + 1,
+                          size + 1U,
                           LL_I2C_MODE_AUTOEND,
                           LL_I2C_GENERATE_START_WRITE);
 
-    /* Enviar registro */
-    while (!LL_I2C_IsActiveFlag_TXIS(I2Cx));
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
+    {
+        if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+        {
+            LL_I2C_ClearFlag_NACK(I2Cx);
+            if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+            return -3;
+        }
+        if (--timeout == 0U) return -4;
+    }
     LL_I2C_TransmitData8(I2Cx, reg_addr);
 
-    /* Enviar datos */
     for (uint16_t i = 0; i < size; i++)
     {
-        while (!LL_I2C_IsActiveFlag_TXIS(I2Cx));
+        timeout = 100000U;
+        while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
+        {
+            if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+            {
+                LL_I2C_ClearFlag_NACK(I2Cx);
+                if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+                return -5;
+            }
+            if (--timeout == 0U) return -6;
+        }
+
         LL_I2C_TransmitData8(I2Cx, data[i]);
     }
 
-    /* Esperar STOP */
-    while (!LL_I2C_IsActiveFlag_STOP(I2Cx));
-    LL_I2C_ClearFlag_STOP(I2Cx);
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+    {
+        if (--timeout == 0U) return -7;
+    }
 
+    LL_I2C_ClearFlag_STOP(I2Cx);
+    return 0;
+}
+
+int8_t DDR5_I2C_WriteRaw(I2C_TypeDef *I2Cx,
+                         uint8_t dev_addr,
+                         const uint8_t *data,
+                         uint16_t size)
+{
+    uint32_t timeout;
+
+    if ((I2Cx == NULL) || (data == NULL) || (size == 0U))
+        return -1;
+
+    if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+    if (LL_I2C_IsActiveFlag_NACK(I2Cx)) LL_I2C_ClearFlag_NACK(I2Cx);
+
+    timeout = 100000U;
+    while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
+    {
+        if (--timeout == 0U) return -2;
+    }
+
+    LL_I2C_HandleTransfer(I2Cx,
+                          (uint32_t)(dev_addr << 1),
+                          LL_I2C_ADDRSLAVE_7BIT,
+                          size,
+                          LL_I2C_MODE_AUTOEND,
+                          LL_I2C_GENERATE_START_WRITE);
+
+    for (uint16_t i = 0; i < size; i++)
+    {
+        timeout = 100000U;
+        while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
+        {
+            if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+            {
+                LL_I2C_ClearFlag_NACK(I2Cx);
+                if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+                return -3;
+            }
+            if (--timeout == 0U) return -4;
+        }
+
+        LL_I2C_TransmitData8(I2Cx, data[i]);
+    }
+
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+    {
+        if (--timeout == 0U) return -5;
+    }
+
+    LL_I2C_ClearFlag_STOP(I2Cx);
     return 0;
 }
 
@@ -478,25 +599,49 @@ int8_t DDR5_I2C_Read(I2C_TypeDef *I2Cx,
                      uint8_t *data,
                      uint16_t size)
 {
-    /* Esperar bus libre */
-    while (LL_I2C_IsActiveFlag_BUSY(I2Cx));
+    uint32_t timeout;
 
-    /* Write: enviar registro */
+    if ((I2Cx == NULL) || (data == NULL) || (size == 0U))
+        return -1;
+
+    if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+    if (LL_I2C_IsActiveFlag_NACK(I2Cx)) LL_I2C_ClearFlag_NACK(I2Cx);
+
+    timeout = 100000U;
+    while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
+    {
+        if (--timeout == 0U) return -2;
+    }
+
     LL_I2C_HandleTransfer(I2Cx,
-                          dev_addr << 1,
+                          (uint32_t)(dev_addr << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
                           1,
                           LL_I2C_MODE_SOFTEND,
                           LL_I2C_GENERATE_START_WRITE);
 
-    while (!LL_I2C_IsActiveFlag_TXIS(I2Cx));
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
+    {
+        if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+        {
+            LL_I2C_ClearFlag_NACK(I2Cx);
+            if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+            return -3;
+        }
+        if (--timeout == 0U) return -4;
+    }
+
     LL_I2C_TransmitData8(I2Cx, reg_addr);
 
-    while (!LL_I2C_IsActiveFlag_TC(I2Cx));
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_TC(I2Cx))
+    {
+        if (--timeout == 0U) return -5;
+    }
 
-    /* Read */
     LL_I2C_HandleTransfer(I2Cx,
-                          dev_addr << 1,
+                          (uint32_t)(dev_addr << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
                           size,
                           LL_I2C_MODE_AUTOEND,
@@ -504,13 +649,28 @@ int8_t DDR5_I2C_Read(I2C_TypeDef *I2Cx,
 
     for (uint16_t i = 0; i < size; i++)
     {
-        while (!LL_I2C_IsActiveFlag_RXNE(I2Cx));
+        timeout = 100000U;
+        while (!LL_I2C_IsActiveFlag_RXNE(I2Cx))
+        {
+            if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+            {
+                LL_I2C_ClearFlag_NACK(I2Cx);
+                if (LL_I2C_IsActiveFlag_STOP(I2Cx)) LL_I2C_ClearFlag_STOP(I2Cx);
+                return -6;
+            }
+            if (--timeout == 0U) return -7;
+        }
+
         data[i] = LL_I2C_ReceiveData8(I2Cx);
     }
 
-    while (!LL_I2C_IsActiveFlag_STOP(I2Cx));
-    LL_I2C_ClearFlag_STOP(I2Cx);
+    timeout = 100000U;
+    while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+    {
+        if (--timeout == 0U) return -8;
+    }
 
+    LL_I2C_ClearFlag_STOP(I2Cx);
     return 0;
 }
 

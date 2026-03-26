@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value="VCP"/>
+		<item key="selection" value="DDR5_I2C_Pi"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
+			<item value="DDR5_I2C_Pi"/>
+			<item value="DDR5_IU2_Pi"/>
+			<item value="#include &quot;stm32h5xx_ll_bus.h&quot;&#x0A;#include &quot;stm32h5xx_ll_gpio.h&quot;&#x0A;#include &quot;stm32h5xx_ll_utils.h&quot;&#x0A;#include &quot;DDR5_Board.h&quot;&#x0A;&#x0A;volatile uint32_t g_ms_ticks = 0;&#x0A;&#x0A;void SysTick_Handler(void)&#x0A;{&#x0A;    g_ms_ticks++;&#x0A;}&#x0A;&#x0A;static inline void delay_ms(uint32_t ms)&#x0A;{&#x0A;    uint32_t start = g_ms_ticks;&#x0A;    while ((g_ms_ticks - start) &lt; ms)&#x0A;    {&#x0A;    }&#x0A;}&#x0A;&#x0A;int main(void)&#x0A;{&#x0A;    uint8_t cmd_clear[] = {0xFE, 0x51};&#x0A;    uint8_t txt_hola[]  = {&apos;H&apos;, &apos;O&apos;, &apos;L&apos;, &apos;A&apos;};&#x0A;    int rc;&#x0A;&#x0A;    DDR5_Clock_Init();&#x0A;    DDR5_GPIO_Init();&#x0A;    DDR5_UART_Init_115200_8N1(USART3, 64000000U);&#x0A;    DDR5_I2C1_Init();&#x0A;&#x0A;    DDR5_UART_WriteString(USART3, &quot;DDR5_TEST_PLATFORM\r\n&quot;, 100000U);&#x0A;&#x0A;    /* Espera tras power-up del LCD */&#x0A;    delay_ms(200);&#x0A;&#x0A;    /* Ping real con 1 byte */&#x0A;    rc = DDR5_I2C_Ping(I2C1, 0x28U);&#x0A;    if (rc == 0)&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;I2C ACK 0x28\r\n&quot;, 100000U);&#x0A;    }&#x0A;    else&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;I2C NO ACK 0x28\r\n&quot;, 100000U);&#x0A;        while (1)&#x0A;        {&#x0A;        }&#x0A;    }&#x0A;&#x0A;    /* Clear display */&#x0A;    rc = DDR5_I2C_WriteRaw(I2C1, 0x28U, cmd_clear, sizeof(cmd_clear));&#x0A;    if (rc == 0)&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;LCD CLEAR OK\r\n&quot;, 100000U);&#x0A;    }&#x0A;    else&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;LCD CLEAR FAIL\r\n&quot;, 100000U);&#x0A;    }&#x0A;&#x0A;    delay_ms(5);&#x0A;&#x0A;    /* Write HOLA */&#x0A;    rc = DDR5_I2C_WriteRaw(I2C1, 0x28U, txt_hola, sizeof(txt_hola));&#x0A;    if (rc == 0)&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;LCD WRITE OK\r\n&quot;, 100000U);&#x0A;    }&#x0A;    else&#x0A;    {&#x0A;        DDR5_UART_WriteString(USART3, &quot;LCD WRITE FAIL\r\n&quot;, 100000U);&#x0A;    }&#x0A;&#x0A;    while (1)&#x0A;    {&#x0A;        LED_STOP_ON();&#x0A;        delay_ms(500);&#x0A;        LED_STOP_OFF();&#x0A;        delay_ms(500);&#x0A;    }&#x0A;}"/>
+			<item value="DDR5_I2C_W"/>
+			<item value="DDR5_I2C_P"/>
+			<item value="LL_AHB2_GRP1_EnableClock"/>
+			<item value="g_lcd"/>
 			<item value="vcp"/>
 			<item value="uart"/>
 			<item value="ua"/>
@@ -16,13 +23,6 @@
 			<item value="ENA"/>
 			<item value="LL_RCC"/>
 			<item value="expected"/>
-			<item value="pll1_src_sel "/>
-			<item value="pll3_pen "/>
-			<item value="vos1"/>
-			<item value="pll3"/>
-			<item value="pll1_p "/>
-			<item value="DDR5_PLL1_N "/>
-			<item value="DDR5_SYSCLK_FREQ_HZ "/>
 		</list>
 		<list key="replacehistory">
 			<item value=""/>

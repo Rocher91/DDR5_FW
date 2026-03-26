@@ -16,7 +16,7 @@
 /* Adjust if needed */
 #define NHD0420_I2C_TIMEOUT   100000UL
 
-static int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
+int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
                                  uint8_t dev_addr_7bit,
                                  const uint8_t *data,
                                  uint16_t size)
@@ -25,6 +25,19 @@ static int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
 
     if ((I2Cx == NULL) || (data == NULL) || (size == 0U))
         return NHD0420_ERR_PARAM;
+
+    /* Limpiar flags previos */
+    if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+        LL_I2C_ClearFlag_STOP(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+        LL_I2C_ClearFlag_NACK(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_BERR(I2Cx))
+        LL_I2C_ClearFlag_BERR(I2Cx);
+
+    if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
+        LL_I2C_ClearFlag_ARLO(I2Cx);
 
     timeout = NHD0420_I2C_TIMEOUT;
     while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
@@ -37,19 +50,43 @@ static int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
                           (uint32_t)(dev_addr_7bit << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
                           size,
-						  LL_I2C_MODE_AUTOEND,
+                          LL_I2C_MODE_AUTOEND,
                           LL_I2C_GENERATE_START_WRITE);
 
     for (uint16_t i = 0; i < size; i++)
     {
         timeout = NHD0420_I2C_TIMEOUT;
+
         while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
         {
             if (LL_I2C_IsActiveFlag_NACK(I2Cx))
             {
                 LL_I2C_ClearFlag_NACK(I2Cx);
+
+                if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+                    LL_I2C_ClearFlag_STOP(I2Cx);
+
                 return NHD0420_ERR_I2C;
             }
+
+            if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+            {
+                LL_I2C_ClearFlag_STOP(I2Cx);
+                return NHD0420_ERR_I2C;
+            }
+
+            if (LL_I2C_IsActiveFlag_BERR(I2Cx))
+            {
+                LL_I2C_ClearFlag_BERR(I2Cx);
+                return NHD0420_ERR_I2C;
+            }
+
+            if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
+            {
+                LL_I2C_ClearFlag_ARLO(I2Cx);
+                return NHD0420_ERR_I2C;
+            }
+
             if (--timeout == 0U)
                 return NHD0420_ERR_TIMEOUT;
         }
@@ -60,6 +97,24 @@ static int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
     timeout = NHD0420_I2C_TIMEOUT;
     while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
     {
+        if (LL_I2C_IsActiveFlag_NACK(I2Cx))
+        {
+            LL_I2C_ClearFlag_NACK(I2Cx);
+            return NHD0420_ERR_I2C;
+        }
+
+        if (LL_I2C_IsActiveFlag_BERR(I2Cx))
+        {
+            LL_I2C_ClearFlag_BERR(I2Cx);
+            return NHD0420_ERR_I2C;
+        }
+
+        if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
+        {
+            LL_I2C_ClearFlag_ARLO(I2Cx);
+            return NHD0420_ERR_I2C;
+        }
+
         if (--timeout == 0U)
             return NHD0420_ERR_TIMEOUT;
     }
@@ -97,7 +152,7 @@ int nhd0420_init(nhd0420_t *lcd, I2C_TypeDef *i2c, uint8_t addr_7bit,
     lcd->delay_ms = delay_ms_fn;
 
     /* Datasheet: 100 ms after power-up for PIC init */
-    lcd->delay_ms(100U);
+    lcd->delay_ms(150U);
 
     return nhd0420_display_on(lcd);
 }

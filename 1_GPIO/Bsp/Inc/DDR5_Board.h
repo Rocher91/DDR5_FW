@@ -354,6 +354,10 @@ int DDR5_UART_WriteString(USART_TypeDef *USARTx,
                           uint32_t timeout_per_byte);
 int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit);
 void DDR5_I2C_Scan(I2C_TypeDef *I2Cx);
+int8_t DDR5_I2C_WriteRaw(I2C_TypeDef *I2Cx,
+                         uint8_t dev_addr,
+                         const uint8_t *data,
+                         uint16_t size);
 
 #ifdef __cplusplus
 }

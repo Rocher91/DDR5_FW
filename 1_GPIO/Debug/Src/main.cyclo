@@ -1,13 +1,2 @@
-C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_gpio.h:813:26:LL_GPIO_IsInputPinSet	2
-C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_gpio.h:894:22:LL_GPIO_SetOutputPin	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_gpio.h:923:22:LL_GPIO_ResetOutputPin	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:285:23:DDR5_ButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:290:23:DDR5_UPButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:295:23:DDR5_DOWNButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:300:23:DDR5_LEFTButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:305:23:DDR5_RIGHTButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:310:23:DDR5_OKButtonPressed	1
-C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:315:23:DDR5_CANCELButtonPressed	1
-../Src/main.c:9:6:SysTick_Handler	1
-../Src/main.c:14:20:delay_ms	2
-../Src/main.c:22:5:main	7
+../Src/main.c:10:6:SysTick_Handler	1
+../Src/main.c:23:5:main	1
