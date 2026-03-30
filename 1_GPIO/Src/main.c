@@ -25,18 +25,18 @@ int main(void)
     DDR5_Clock_Init();
     DDR5_GPIO_Init();
     DDR5_I2C1_Init();
+    //MX_I2C1_Init();
     DDR5_UART_Init_115200_8N1(USART3, 64000000U);
 
-    //DDR5_I2C_Scan(I2C1);
+    delay_ms(200);
 
-    uint8_t raw_cmd[2] = {0xFE, 0x41};
-    int rc = nhd0420_i2c_write_raw(I2C1, 0x28U, raw_cmd, 2);
+    uint8_t data[2] = {0xFE, 0x42}; // Display ON
 
-    char msg[32];
-    snprintf(msg, sizeof(msg), "raw rc=%d\r\n", rc);
-    DDR5_UART_WriteString(USART3, msg, 100000U);
+    int rc = DDR5_I2C_Ping(I2C1, 0x50);
+    DDR5_I2C_Scan(I2C1);
 
-    while (1)
-    {
-    }
+	while (1)
+	{
+
+	}
 }

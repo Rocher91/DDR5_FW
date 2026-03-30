@@ -1,0 +1,42 @@
+#include "stm32h5xx_ll_bus.h"
+#include "stm32h5xx_ll_gpio.h"
+#include "stm32h5xx_ll_utils.h"
+#include "nhd0420_i2c.h"
+#include "DDR5_Board.h"
+
+volatile uint32_t g_ms_ticks = 0;
+static nhd0420_t g_lcd;
+
+void SysTick_Handler(void)
+{
+    g_ms_ticks++;
+}
+
+static inline void delay_ms(uint32_t ms)
+{
+    uint32_t start = g_ms_ticks;
+    while ((g_ms_ticks - start) < ms)
+    {
+    }
+}
+
+int main(void)
+{
+    DDR5_Clock_Init();
+    DDR5_GPIO_Init();
+    DDR5_I2C1_Init();
+    //MX_I2C1_Init();
+    DDR5_UART_Init_115200_8N1(USART3, 64000000U);
+
+    delay_ms(200);
+
+    uint8_t data[2] = {0xFE, 0x42}; // Display ON
+
+    //int rc = DDR5_I2C_Ping(I2C1, 0x28);
+    DDR5_I2C_Scan(I2C1);
+
+	while (1)
+	{
+
+	}
+}

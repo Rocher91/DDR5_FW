@@ -316,6 +316,7 @@ static inline uint8_t DDR5_CANCELButtonPressed(void)
 {
     return DDR5_ButtonPressed(BTN_CANCEL_PORT, BTN_CANCEL_PIN);
 }
+void I2C_Scan(I2C_TypeDef *I2Cx);
 
 /* =========================================================
    Board init functions
@@ -358,6 +359,8 @@ int8_t DDR5_I2C_WriteRaw(I2C_TypeDef *I2Cx,
                          uint8_t dev_addr,
                          const uint8_t *data,
                          uint16_t size);
+void MX_I2C1_Init(void);
+int I2C_WriteBytes(I2C_TypeDef *I2Cx, uint8_t addr, uint8_t *data, uint8_t size);
 
 #ifdef __cplusplus
 }

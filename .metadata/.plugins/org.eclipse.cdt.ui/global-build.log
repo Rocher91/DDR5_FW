@@ -1,40 +1,39 @@
-21:56:06 **** Incremental Build of configuration Debug for project 1_GPIO ****
+21:58:53 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
-arm-none-eabi-gcc "../Bsp/src/DDR5_Board.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DSTM32H563xx -c -I../Inc -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/src" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/STM32H5xx_HAL_Driver/Inc" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/CMSIS/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/CMSIS/Device/ST/STM32H5xx/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/Drivers/CMSIS/Device/ST/STM32H5xx/Source/Templates" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Bsp/src/DDR5_Board.d" -MT"Bsp/src/DDR5_Board.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Bsp/src/DDR5_Board.o"
-../Bsp/src/DDR5_Board.c: In function 'DDR5_I2C_Scan':
-../Bsp/src/DDR5_Board.c:433:13: warning: implicit declaration of function 'snprintf' [-Wimplicit-function-declaration]
-  433 |             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
-      |             ^~~~~~~~
-../Bsp/src/DDR5_Board.c:14:1: note: include '<stdio.h>' or provide a declaration of 'snprintf'
-   13 | #include "stm32h5xx_ll_usart.h"
-  +++ |+#include <stdio.h>
-   14 | #include "stm32h5xx_ll_exti.h"
-../Bsp/src/DDR5_Board.c:433:13: warning: incompatible implicit declaration of built-in function 'snprintf' [-Wbuiltin-declaration-mismatch]
-  433 |             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
-      |             ^~~~~~~~
-../Bsp/src/DDR5_Board.c:433:13: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DSTM32H563xx -c -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include/Templates" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc" -I../Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Src/main.o"
+../Src/main.c: In function 'main':
+../Src/main.c:35:9: warning: unused variable 'rc' [-Wunused-variable]
+   35 |     int rc = DDR5_I2C_Ping(I2C1, 0x50);
+      |         ^~
+../Src/main.c:33:13: warning: unused variable 'data' [-Wunused-variable]
+   33 |     uint8_t data[2] = {0xFE, 0x42}; // Display ON
+      |             ^~~~
+At top level:
+../Src/main.c:8:18: warning: 'g_lcd' defined but not used [-Wunused-variable]
+    8 | static nhd0420_t g_lcd;
+      |                  ^~~~~
 arm-none-eabi-gcc -o "1_GPIO.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\Xavi\Documents\FW\DDR5_FW\1_GPIO\STM32H563ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="1_GPIO.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: 1_GPIO.elf
  
 arm-none-eabi-size  1_GPIO.elf 
 arm-none-eabi-objdump -h -S 1_GPIO.elf  > "1_GPIO.list"
    text	   data	    bss	    dec	    hex	filename
-  11008	     92	   1900	  13000	   32c8	1_GPIO.elf
+  11104	     92	   1900	  13096	   3328	1_GPIO.elf
 Finished building: default.size.stdout
  
 Finished building: 1_GPIO.list
  
-21:56:10 **** Incremental Build of configuration Debug for project 1_GPIO ****
+21:59:07 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
 arm-none-eabi-size  1_GPIO.elf 
    text	   data	    bss	    dec	    hex	filename
-  11008	     92	   1900	  13000	   32c8	1_GPIO.elf
+  11104	     92	   1900	  13096	   3328	1_GPIO.elf
 Finished building: default.size.stdout
  
-22:08:26 **** Incremental Build of configuration Debug for project 1_GPIO ****
+22:00:09 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
 arm-none-eabi-size  1_GPIO.elf 
    text	   data	    bss	    dec	    hex	filename
-  11008	     92	   1900	  13000	   32c8	1_GPIO.elf
+  11104	     92	   1900	  13096	   3328	1_GPIO.elf
 Finished building: default.size.stdout
  

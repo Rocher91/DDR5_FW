@@ -22,20 +22,17 @@ int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
                                  uint16_t size)
 {
     uint32_t timeout;
+    uint16_t idx = 0;
 
     if ((I2Cx == NULL) || (data == NULL) || (size == 0U))
         return NHD0420_ERR_PARAM;
 
-    /* Limpiar flags previos */
     if (LL_I2C_IsActiveFlag_STOP(I2Cx))
         LL_I2C_ClearFlag_STOP(I2Cx);
-
     if (LL_I2C_IsActiveFlag_NACK(I2Cx))
         LL_I2C_ClearFlag_NACK(I2Cx);
-
     if (LL_I2C_IsActiveFlag_BERR(I2Cx))
         LL_I2C_ClearFlag_BERR(I2Cx);
-
     if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
         LL_I2C_ClearFlag_ARLO(I2Cx);
 
@@ -53,53 +50,39 @@ int nhd0420_i2c_write_raw(I2C_TypeDef *I2Cx,
                           LL_I2C_MODE_AUTOEND,
                           LL_I2C_GENERATE_START_WRITE);
 
-    for (uint16_t i = 0; i < size; i++)
-    {
-        timeout = NHD0420_I2C_TIMEOUT;
-
-        while (!LL_I2C_IsActiveFlag_TXIS(I2Cx))
-        {
-            if (LL_I2C_IsActiveFlag_NACK(I2Cx))
-            {
-                LL_I2C_ClearFlag_NACK(I2Cx);
-
-                if (LL_I2C_IsActiveFlag_STOP(I2Cx))
-                    LL_I2C_ClearFlag_STOP(I2Cx);
-
-                return NHD0420_ERR_I2C;
-            }
-
-            if (LL_I2C_IsActiveFlag_STOP(I2Cx))
-            {
-                LL_I2C_ClearFlag_STOP(I2Cx);
-                return NHD0420_ERR_I2C;
-            }
-
-            if (LL_I2C_IsActiveFlag_BERR(I2Cx))
-            {
-                LL_I2C_ClearFlag_BERR(I2Cx);
-                return NHD0420_ERR_I2C;
-            }
-
-            if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
-            {
-                LL_I2C_ClearFlag_ARLO(I2Cx);
-                return NHD0420_ERR_I2C;
-            }
-
-            if (--timeout == 0U)
-                return NHD0420_ERR_TIMEOUT;
-        }
-
-        LL_I2C_TransmitData8(I2Cx, data[i]);
-    }
+    volatile uint32_t isr_after_start = I2C1->ISR;
+    volatile uint32_t txis_after_start = LL_I2C_IsActiveFlag_TXIS(I2C1);
+    volatile uint32_t nack_after_start = LL_I2C_IsActiveFlag_NACK(I2C1);
+    volatile uint32_t stop_after_start = LL_I2C_IsActiveFlag_STOP(I2C1);
+    volatile uint32_t tc_after_start   = LL_I2C_IsActiveFlag_TC(I2C1);
 
     timeout = NHD0420_I2C_TIMEOUT;
+
     while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
     {
+    	volatile uint32_t isr_loop  = I2C1->ISR;
+    	volatile uint32_t txis_loop = LL_I2C_IsActiveFlag_TXIS(I2C1);
+    	volatile uint32_t nack_loop = LL_I2C_IsActiveFlag_NACK(I2C1);
+    	volatile uint32_t stop_loop = LL_I2C_IsActiveFlag_STOP(I2C1);
+    	volatile uint32_t tc_loop   = LL_I2C_IsActiveFlag_TC(I2C1);
+
+        if (LL_I2C_IsActiveFlag_TXIS(I2Cx))
+        {
+            LL_I2C_TransmitData8(I2Cx, data[idx++]);
+
+            if (idx >= size)
+            {
+                /* ya se han cargado todos los bytes */
+            }
+
+            timeout = NHD0420_I2C_TIMEOUT;
+        }
+
         if (LL_I2C_IsActiveFlag_NACK(I2Cx))
         {
             LL_I2C_ClearFlag_NACK(I2Cx);
+            if (LL_I2C_IsActiveFlag_STOP(I2Cx))
+                LL_I2C_ClearFlag_STOP(I2Cx);
             return NHD0420_ERR_I2C;
         }
 
