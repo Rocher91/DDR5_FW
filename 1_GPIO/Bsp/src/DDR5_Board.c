@@ -113,18 +113,19 @@ void DDR5_GPIO_Init(void)
      * Using AF4 here as a placeholder if your Cube project
      * resolves it that way; adjust if needed.
      * ========================================================= */
+    /*
     DDR5_GPIO_Init_AF(I3C1_SCL_PORT, I3C1_SCL_PIN,
-                      LL_GPIO_AF_4,
+                      LL_GPIO_AF_6,
                       LL_GPIO_OUTPUT_OPENDRAIN,
                       LL_GPIO_SPEED_FREQ_VERY_HIGH,
                       LL_GPIO_PULL_NO);
 
     DDR5_GPIO_Init_AF(I3C1_SDA_PORT, I3C1_SDA_PIN,
-                      LL_GPIO_AF_4,
+                      LL_GPIO_AF_6,
                       LL_GPIO_OUTPUT_OPENDRAIN,
                       LL_GPIO_SPEED_FREQ_VERY_HIGH,
                       LL_GPIO_PULL_NO);
-
+	*/
     /* =========================================================
      * I2C LCD (PB6 / PB7)
      * Open-drain, external pull-ups required
@@ -361,8 +362,6 @@ static void DDR5_EXTI_SelectPort(uint32_t line, uint32_t portsel)
 int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit)
 {
     uint32_t timeout;
-    uint8_t dummy = 0x00;
-    uint8_t tx_started = 0U;
 
     if (I2Cx == NULL)
         return -10;
@@ -380,17 +379,19 @@ int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit)
     if (LL_I2C_IsActiveFlag_ARLO(I2Cx))
         LL_I2C_ClearFlag_ARLO(I2Cx);
 
+    /* Esperar bus libre */
     timeout = 100000U;
     while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
     {
         if (--timeout == 0U)
-            return -1;   /* bus busy timeout */
+            return -1;
     }
 
+    /* Solo dirección, sin datos */
     LL_I2C_HandleTransfer(I2Cx,
                           (uint32_t)(addr_7bit << 1),
                           LL_I2C_ADDRSLAVE_7BIT,
-                          1,
+                          0,
                           LL_I2C_MODE_AUTOEND,
                           LL_I2C_GENERATE_START_WRITE);
 
@@ -398,22 +399,20 @@ int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit)
 
     while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
     {
-        /* Dirección no reconocida */
         if (LL_I2C_IsActiveFlag_NACK(I2Cx))
         {
             LL_I2C_ClearFlag_NACK(I2Cx);
 
-            if (LL_I2C_IsActiveFlag_STOP(I2Cx))
-                LL_I2C_ClearFlag_STOP(I2Cx);
+            /* Esperar a que llegue STOP si hace falta */
+            timeout = 100000U;
+            while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
+            {
+                if (--timeout == 0U)
+                    return -2;
+            }
 
-            return -2;   /* no ACK */
-        }
-
-        /* Dirección reconocida y listo para transmitir */
-        if ((!tx_started) && LL_I2C_IsActiveFlag_TXIS(I2Cx))
-        {
-            LL_I2C_TransmitData8(I2Cx, dummy);
-            tx_started = 1U;
+            LL_I2C_ClearFlag_STOP(I2Cx);
+            return -3;   /* NACK */
         }
 
         if (LL_I2C_IsActiveFlag_BERR(I2Cx))
@@ -429,71 +428,22 @@ int DDR5_I2C_Ping(I2C_TypeDef *I2Cx, uint8_t addr_7bit)
         }
 
         if (--timeout == 0U)
-            return -3;   /* timeout waiting STOP */
+            return -4;   /* timeout esperando STOP */
     }
 
     LL_I2C_ClearFlag_STOP(I2Cx);
 
-    /* Si nunca hubo TXIS, algo raro pasó */
-    if (!tx_started)
-        return -4;
+    /* Esperar realmente a que BUSY caiga */
+    timeout = 100000U;
+    while (LL_I2C_IsActiveFlag_BUSY(I2Cx))
+    {
+        if (--timeout == 0U)
+            return -7;
+    }
 
     return 0;
 }
-void I2C_Scan(I2C_TypeDef *I2Cx)
-{
-    char msg[32];
 
-    for (uint8_t addr = 0x08; addr < 0x78; addr++)
-    {
-        /* Esperar bus libre */
-        while (LL_I2C_IsActiveFlag_BUSY(I2Cx));
-
-        /* Limpiar flags */
-        if (LL_I2C_IsActiveFlag_STOP(I2Cx))
-            LL_I2C_ClearFlag_STOP(I2Cx);
-
-        if (LL_I2C_IsActiveFlag_NACK(I2Cx))
-            LL_I2C_ClearFlag_NACK(I2Cx);
-
-        /* Start + dirección */
-        LL_I2C_HandleTransfer(I2Cx,
-                              (uint32_t)(addr << 1),
-                              LL_I2C_ADDRSLAVE_7BIT,
-                              0, /* solo dirección */
-                              LL_I2C_MODE_AUTOEND,
-                              LL_I2C_GENERATE_START_WRITE);
-
-        uint32_t timeout = 10000U;
-        uint8_t nack = 0;
-
-        while (!LL_I2C_IsActiveFlag_STOP(I2Cx))
-        {
-            if (LL_I2C_IsActiveFlag_NACK(I2Cx))
-            {
-                LL_I2C_ClearFlag_NACK(I2Cx);
-                nack = 1;
-                break;
-            }
-
-            if (--timeout == 0)
-                break;
-        }
-
-        /* Si NO hubo NACK → hay ACK */
-        if ((timeout > 0) && (nack == 0))
-        {
-            snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
-            DDR5_UART_WriteString(USART3, msg, 100000U);
-        }
-
-        /* Limpiar STOP */
-        if (LL_I2C_IsActiveFlag_STOP(I2Cx))
-            LL_I2C_ClearFlag_STOP(I2Cx);
-    }
-
-    DDR5_UART_WriteString(USART3, "Scan done\r\n", 100000U);
-}
 void DDR5_I2C_Scan(I2C_TypeDef *I2Cx)
 {
     char msg[32];
@@ -507,8 +457,16 @@ void DDR5_I2C_Scan(I2C_TypeDef *I2Cx)
             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
             DDR5_UART_WriteString(USART3, msg, 100000U);
         }
+
+        /* pequeña pausa entre probes */
+        for (volatile uint32_t i = 0; i < 5000U; i++)
+        {
+        }
     }
+
+    DDR5_UART_WriteString(USART3, "Scan done\r\n", 100000U);
 }
+
 void MX_I2C1_Init(void)
 {
     LL_I2C_InitTypeDef I2C_InitStruct = {0};
@@ -545,6 +503,50 @@ void MX_I2C1_Init(void)
     LL_I2C_EnableAutoEndMode(I2C1);
     LL_I2C_Enable(I2C1);
 }
+void DDR5_I2C4_Init(void)
+{
+
+    LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOB);
+    LL_APB3_GRP1_EnableClock(LL_APB3_GRP1_PERIPH_I2C4);
+
+
+    /* PB6 = SCL, PB7 = SDA */
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_8, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
+
+    LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_8, LL_GPIO_AF_6);
+    LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_9, LL_GPIO_AF_6);
+
+    LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_8, LL_GPIO_OUTPUT_OPENDRAIN);
+    LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_9, LL_GPIO_OUTPUT_OPENDRAIN);
+
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_8, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_9, LL_GPIO_PULL_NO);
+
+    LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_8, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_9, LL_GPIO_SPEED_FREQ_HIGH);
+
+    LL_I2C_Disable(I2C4);
+
+    LL_I2C_SetTiming(I2C4, 0x403032CA);
+
+    LL_I2C_EnableAnalogFilter(I2C4);
+    LL_I2C_SetDigitalFilter(I2C4, 0);
+
+    LL_I2C_SetOwnAddress1(I2C4, 0x00, LL_I2C_OWNADDRESS1_7BIT);
+    LL_I2C_DisableOwnAddress1(I2C4);
+    LL_I2C_DisableOwnAddress2(I2C4);
+    LL_I2C_DisableGeneralCall(I2C4);
+
+    LL_I2C_SetMode(I2C4,LL_I2C_MODE_I2C);
+    LL_I2C_AcknowledgeNextData(I2C4,LL_I2C_ACK);
+
+    LL_I2C_EnableAutoEndMode(I2C4);
+    LL_I2C_EnableClockStretching(I2C4);
+
+    LL_I2C_Enable(I2C4);
+
+}
 
 void DDR5_I2C1_Init(void)
 {
@@ -577,17 +579,16 @@ void DDR5_I2C1_Init(void)
 
     LL_I2C_SetOwnAddress1(I2C1, 0x00, LL_I2C_OWNADDRESS1_7BIT);
     LL_I2C_DisableOwnAddress1(I2C1);
-    //LL_I2C_DisableOwnAddress2(I2C1);
+    LL_I2C_DisableOwnAddress2(I2C1);
     LL_I2C_DisableGeneralCall(I2C1);
 
     LL_I2C_SetMode(I2C1,LL_I2C_MODE_I2C);
     LL_I2C_AcknowledgeNextData(I2C1,LL_I2C_ACK);
 
     LL_I2C_EnableAutoEndMode(I2C1);
-    //LL_I2C_EnableClockStretching(I2C1);
+    LL_I2C_EnableClockStretching(I2C1);
 
     LL_I2C_Enable(I2C1);
-
 
 }
 
@@ -696,6 +697,77 @@ int8_t DDR5_I2C_Write(I2C_TypeDef *I2Cx,
 
     LL_I2C_ClearFlag_STOP(I2Cx);
     return 0;
+}
+
+void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_name)
+{
+    char msg[32];
+    char line[21];
+    uint8_t found = 0;
+
+    if (lcd != NULL)
+    {
+        nhd0420_clear(lcd);
+        snprintf(line, sizeof(line), "Scan %s", bus_name);
+        nhd0420_write_line(lcd, 0, line);
+        nhd0420_write_line(lcd, 1, "Scanning...");
+        nhd0420_write_line(lcd, 2, "");
+        nhd0420_write_line(lcd, 3, "");
+    }
+
+    for (uint8_t addr = 0x08; addr < 0x78; addr++)
+    {
+        int rc = DDR5_I2C_Ping(I2Cx, addr);
+
+        if (rc == 0)
+        {
+            found++;
+
+            /* UART */
+            snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
+            DDR5_UART_WriteString(USART3, msg, 100000U);
+
+            /* LCD */
+            if (lcd != NULL)
+            {
+                snprintf(line, sizeof(line), "ACK 0x%02X", addr);
+
+                if (found == 1)
+                    nhd0420_write_line(lcd, 1, line);
+                else if (found == 2)
+                    nhd0420_write_line(lcd, 1, line);
+                else if (found == 3)
+                    nhd0420_write_line(lcd, 3, line);
+                else
+                {
+                    /* si hay más de 3, recicla líneas */
+                    nhd0420_write_line(lcd, 1, "More devices...");
+                    nhd0420_write_line(lcd, 2, line);
+                }
+            }
+        }
+
+        for (volatile uint32_t i = 0; i < 5000U; i++)
+        {
+        }
+    }
+
+    DDR5_UART_WriteString(USART3, "Scan done\r\n", 100000U);
+
+    if (lcd != NULL)
+    {
+        if (found == 0)
+        {
+            nhd0420_write_line(lcd, 1, "No device found");
+            nhd0420_write_line(lcd, 2, "");
+            nhd0420_write_line(lcd, 3, "");
+        }
+        else
+        {
+            snprintf(line, sizeof(line), "Found: %u", found);
+            nhd0420_write_line(lcd, 0, line);
+        }
+    }
 }
 
 int8_t DDR5_I2C_WriteRaw(I2C_TypeDef *I2Cx,

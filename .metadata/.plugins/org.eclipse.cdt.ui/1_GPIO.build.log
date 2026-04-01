@@ -1,10 +1,42 @@
-22:00:09 **** Incremental Build of configuration Debug for project 1_GPIO ****
+20:40:22 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
+arm-none-eabi-gcc "../Bsp/src/DDR5_Board.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DSTM32H563xx -c -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include/Templates" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc" -I../Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Bsp/src/DDR5_Board.d" -MT"Bsp/src/DDR5_Board.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Bsp/src/DDR5_Board.o"
+../Bsp/src/DDR5_Board.c: In function 'DDR5_I2C_Scan':
+../Bsp/src/DDR5_Board.c:457:13: warning: implicit declaration of function 'snprintf' [-Wimplicit-function-declaration]
+  457 |             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
+      |             ^~~~~~~~
+../Bsp/src/DDR5_Board.c:14:1: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+   13 | #include "stm32h5xx_ll_usart.h"
+  +++ |+#include <stdio.h>
+   14 | #include "stm32h5xx_ll_exti.h"
+../Bsp/src/DDR5_Board.c:457:13: warning: incompatible implicit declaration of built-in function 'snprintf' [-Wbuiltin-declaration-mismatch]
+  457 |             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
+      |             ^~~~~~~~
+../Bsp/src/DDR5_Board.c:457:13: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+../Bsp/src/DDR5_Board.c: In function 'DDR5_I2C_Scan_With_LCD':
+../Bsp/src/DDR5_Board.c:711:9: warning: incompatible implicit declaration of built-in function 'snprintf' [-Wbuiltin-declaration-mismatch]
+  711 |         snprintf(line, sizeof(line), "Scan %s", bus_name);
+      |         ^~~~~~~~
+../Bsp/src/DDR5_Board.c:711:9: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+../Bsp/src/DDR5_Board.c:727:13: warning: incompatible implicit declaration of built-in function 'snprintf' [-Wbuiltin-declaration-mismatch]
+  727 |             snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
+      |             ^~~~~~~~
+../Bsp/src/DDR5_Board.c:727:13: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+../Bsp/src/DDR5_Board.c:767:13: warning: incompatible implicit declaration of built-in function 'snprintf' [-Wbuiltin-declaration-mismatch]
+  767 |             snprintf(line, sizeof(line), "Found: %u", found);
+      |             ^~~~~~~~
+../Bsp/src/DDR5_Board.c:767:13: note: include '<stdio.h>' or provide a declaration of 'snprintf'
+arm-none-eabi-gcc -o "1_GPIO.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\Xavi\Documents\FW\DDR5_FW\1_GPIO\STM32H563ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="1_GPIO.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: 1_GPIO.elf
+ 
 arm-none-eabi-size  1_GPIO.elf 
+arm-none-eabi-objdump -h -S 1_GPIO.elf  > "1_GPIO.list"
    text	   data	    bss	    dec	    hex	filename
-  11104	     92	   1900	  13096	   3328	1_GPIO.elf
+  13556	     92	   1916	  15564	   3ccc	1_GPIO.elf
 Finished building: default.size.stdout
  
+Finished building: 1_GPIO.list
+ 
 
-22:00:09 Build Finished. 0 errors, 0 warnings. (took 143ms)
+20:40:23 Build Finished. 0 errors, 5 warnings. (took 537ms)
 

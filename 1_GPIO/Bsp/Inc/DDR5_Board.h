@@ -10,6 +10,7 @@ extern "C" {
 #include "stm32h5xx_ll_gpio.h"
 #include "stm32h5xx_ll_exti.h"
 #include "stm32h5xx_ll_system.h"
+#include "nhd0420_i2c.h"
 
 /* =========================================================
    Board identification
@@ -361,6 +362,8 @@ int8_t DDR5_I2C_WriteRaw(I2C_TypeDef *I2Cx,
                          uint16_t size);
 void MX_I2C1_Init(void);
 int I2C_WriteBytes(I2C_TypeDef *I2Cx, uint8_t addr, uint8_t *data, uint8_t size);
+void DDR5_I2C4_Init(void);
+void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_name);
 
 #ifdef __cplusplus
 }

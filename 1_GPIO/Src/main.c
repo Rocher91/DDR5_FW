@@ -3,6 +3,7 @@
 #include "stm32h5xx_ll_utils.h"
 #include "nhd0420_i2c.h"
 #include "DDR5_Board.h"
+#include <stdio.h>
 
 volatile uint32_t g_ms_ticks = 0;
 static nhd0420_t g_lcd;
@@ -25,15 +26,25 @@ int main(void)
     DDR5_Clock_Init();
     DDR5_GPIO_Init();
     DDR5_I2C1_Init();
+    DDR5_I2C4_Init();
     //MX_I2C1_Init();
     DDR5_UART_Init_115200_8N1(USART3, 64000000U);
 
     delay_ms(200);
 
-    uint8_t data[2] = {0xFE, 0x42}; // Display ON
+    if (nhd0420_init(&g_lcd, I2C1, 0x28U, delay_ms) != 0)
+	{
+		DDR5_UART_WriteString(USART3, "LCD init FAIL\r\n", 100000U);
+		while (1) {}
+	}
 
-    int rc = DDR5_I2C_Ping(I2C1, 0x50);
-    DDR5_I2C_Scan(I2C1);
+	nhd0420_set_backlight(&g_lcd, 8);
+	nhd0420_set_contrast(&g_lcd, 40);
+	nhd0420_clear(&g_lcd);
+	//nhd0420_write_line(&g_lcd, 0, "DDR5 Test Platform");
+	delay_ms(1000);
+
+	DDR5_I2C_Scan_With_LCD(I2C4, &g_lcd, "SDBus");
 
 	while (1)
 	{

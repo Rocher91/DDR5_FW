@@ -12,6 +12,7 @@ Bsp/src/DDR5_Board_IRQ.o: ../Bsp/src/DDR5_Board_IRQ.c \
  C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_gpio.h \
  C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_exti.h \
  C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_system.h \
+ C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/nhd0420_i2c.h \
  C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_cortex.h
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/DDR5_Board.h:
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include/stm32h5xx.h:
@@ -26,4 +27,5 @@ C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_gpio.h:
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_exti.h:
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_system.h:
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc/nhd0420_i2c.h:
 C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_cortex.h:

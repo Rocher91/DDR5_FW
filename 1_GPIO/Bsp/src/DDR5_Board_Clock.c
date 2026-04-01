@@ -478,8 +478,9 @@ void DDR5_Clock_Init(void)
 
     /* Peripheral kernel clocks
      */
-    LL_RCC_SetI3CClockSource(LL_RCC_I3C1_CLKSOURCE_PLL3R);
+    //LL_RCC_SetI3CClockSource(LL_RCC_I3C1_CLKSOURCE_PLL3R);
     LL_RCC_SetI2CClockSource(LL_RCC_I2C1_CLKSOURCE_HSI);
+    LL_RCC_SetI2CClockSource(LL_RCC_I2C4_CLKSOURCE_HSI);
     LL_RCC_SetUSARTClockSource(LL_RCC_USART3_CLKSOURCE_HSI);
 
     /* SYSCLK <- PLL1 */
