@@ -6,7 +6,7 @@
  */
 
 #include "DDR5_Board.h"
-
+#include <stdio.h>
 #include "stm32h5xx_ll_bus.h"
 #include "stm32h5xx_ll_gpio.h"
 #include "stm32h5xx_ll_i2c.h"
@@ -701,8 +701,8 @@ int8_t DDR5_I2C_Write(I2C_TypeDef *I2Cx,
 
 void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_name)
 {
-    char msg[32];
-    char line[21];
+    char msg[32]= {" "};
+    char line[21] = {" "};
     uint8_t found = 0;
 
     if (lcd != NULL)
@@ -711,8 +711,10 @@ void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_n
         snprintf(line, sizeof(line), "Scan %s", bus_name);
         nhd0420_write_line(lcd, 0, line);
         nhd0420_write_line(lcd, 1, "Scanning...");
-        nhd0420_write_line(lcd, 2, "");
-        nhd0420_write_line(lcd, 3, "");
+        nhd0420_write_line(lcd, 2, " ");
+        nhd0420_write_line(lcd, 3, " ");
+        for (volatile uint32_t i = 0; i < 50000U; i++);
+
     }
 
     for (uint8_t addr = 0x08; addr < 0x78; addr++)
@@ -724,20 +726,21 @@ void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_n
             found++;
 
             /* UART */
-            snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", addr);
+            snprintf(msg, sizeof(msg), "ACK 0x%X\r\n", addr);
             DDR5_UART_WriteString(USART3, msg, 100000U);
 
             /* LCD */
             if (lcd != NULL)
             {
-                snprintf(line, sizeof(line), "ACK 0x%02X", addr);
+            	for (uint32_t i = 0; i < 21; i++) line[i] = ' ';
+                snprintf(line, sizeof(line), "-> ACK 0x%02X ", addr);
 
                 if (found == 1)
                     nhd0420_write_line(lcd, 1, line);
                 else if (found == 2)
-                    nhd0420_write_line(lcd, 1, line);
-                else if (found == 3)
-                    nhd0420_write_line(lcd, 3, line);
+                    nhd0420_write_line(lcd, 2, line);
+                //else if (found == 3)
+                  //  nhd0420_write_line(lcd, 3, line);
                 else
                 {
                     /* si hay más de 3, recicla líneas */
@@ -764,7 +767,7 @@ void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_n
         }
         else
         {
-            snprintf(line, sizeof(line), "Found: %u", found);
+            snprintf(line, sizeof(line), "Found: %u slaves", found);
             nhd0420_write_line(lcd, 0, line);
         }
     }

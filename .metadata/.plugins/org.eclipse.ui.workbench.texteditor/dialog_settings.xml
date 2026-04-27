@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value="-2"/>
+		<item key="selection" value="I2C4"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
+			<item value="I2C4"/>
+			<item value="APB1"/>
+			<item value="I2C5"/>
+			<item value="I2C1"/>
 			<item value="-2"/>
 			<item value="  LL_I2C_SetMode"/>
 			<item value="NHD0420_ERR_I2C"/>
@@ -19,10 +23,6 @@
 			<item value="DDR5_I2C_W"/>
 			<item value="DDR5_I2C_P"/>
 			<item value="LL_AHB2_GRP1_EnableClock"/>
-			<item value="g_lcd"/>
-			<item value="vcp"/>
-			<item value="uart"/>
-			<item value="ua"/>
 		</list>
 		<list key="replacehistory">
 			<item value=""/>
