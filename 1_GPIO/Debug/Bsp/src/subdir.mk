@@ -8,18 +8,21 @@ C_SRCS += \
 ../Bsp/src/DDR5_Board.c \
 ../Bsp/src/DDR5_Board_Clock.c \
 ../Bsp/src/DDR5_Board_IRQ.c \
+../Bsp/src/DDR5_Time.c \
 ../Bsp/src/nhd0420_i2c.c 
 
 OBJS += \
 ./Bsp/src/DDR5_Board.o \
 ./Bsp/src/DDR5_Board_Clock.o \
 ./Bsp/src/DDR5_Board_IRQ.o \
+./Bsp/src/DDR5_Time.o \
 ./Bsp/src/nhd0420_i2c.o 
 
 C_DEPS += \
 ./Bsp/src/DDR5_Board.d \
 ./Bsp/src/DDR5_Board_Clock.d \
 ./Bsp/src/DDR5_Board_IRQ.d \
+./Bsp/src/DDR5_Time.d \
 ./Bsp/src/nhd0420_i2c.d 
 
 
@@ -30,7 +33,7 @@ Bsp/src/%.o Bsp/src/%.su Bsp/src/%.cyclo: ../Bsp/src/%.c Bsp/src/subdir.mk
 clean: clean-Bsp-2f-src
 
 clean-Bsp-2f-src:
-	-$(RM) ./Bsp/src/DDR5_Board.cyclo ./Bsp/src/DDR5_Board.d ./Bsp/src/DDR5_Board.o ./Bsp/src/DDR5_Board.su ./Bsp/src/DDR5_Board_Clock.cyclo ./Bsp/src/DDR5_Board_Clock.d ./Bsp/src/DDR5_Board_Clock.o ./Bsp/src/DDR5_Board_Clock.su ./Bsp/src/DDR5_Board_IRQ.cyclo ./Bsp/src/DDR5_Board_IRQ.d ./Bsp/src/DDR5_Board_IRQ.o ./Bsp/src/DDR5_Board_IRQ.su ./Bsp/src/nhd0420_i2c.cyclo ./Bsp/src/nhd0420_i2c.d ./Bsp/src/nhd0420_i2c.o ./Bsp/src/nhd0420_i2c.su
+	-$(RM) ./Bsp/src/DDR5_Board.cyclo ./Bsp/src/DDR5_Board.d ./Bsp/src/DDR5_Board.o ./Bsp/src/DDR5_Board.su ./Bsp/src/DDR5_Board_Clock.cyclo ./Bsp/src/DDR5_Board_Clock.d ./Bsp/src/DDR5_Board_Clock.o ./Bsp/src/DDR5_Board_Clock.su ./Bsp/src/DDR5_Board_IRQ.cyclo ./Bsp/src/DDR5_Board_IRQ.d ./Bsp/src/DDR5_Board_IRQ.o ./Bsp/src/DDR5_Board_IRQ.su ./Bsp/src/DDR5_Time.cyclo ./Bsp/src/DDR5_Time.d ./Bsp/src/DDR5_Time.o ./Bsp/src/DDR5_Time.su ./Bsp/src/nhd0420_i2c.cyclo ./Bsp/src/nhd0420_i2c.d ./Bsp/src/nhd0420_i2c.o ./Bsp/src/nhd0420_i2c.su
 
 .PHONY: clean-Bsp-2f-src
 

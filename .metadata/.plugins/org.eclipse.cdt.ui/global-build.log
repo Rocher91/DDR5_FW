@@ -1,28 +1,51 @@
-20:09:21 **** Incremental Build of configuration Debug for project 1_GPIO ****
+21:37:57 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
 arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m33 -std=gnu11 -g3 -DDEBUG -DUSE_FULL_LL_DRIVER -DSTM32H563xx -c -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Bsp/Inc" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Include" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/CMSIS/Device/ST/STM32H5xx/Include/Templates" -I"C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc" -I../Inc -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -o "Src/main.o"
+../Src/main.c: In function 'DDR5_I3C_HAL_Send_SETAASA_Polling':
+../Src/main.c:70:18: warning: variable 'sr' set but not used [-Wunused-but-set-variable]
+   70 |         uint32_t sr;
+      |                  ^~
+../Src/main.c:69:18: warning: variable 'cfgr' set but not used [-Wunused-but-set-variable]
+   69 |         uint32_t cfgr;
+      |                  ^~~~
+../Src/main.c:68:18: warning: variable 'ser' set but not used [-Wunused-but-set-variable]
+   68 |         uint32_t ser;
+      |                  ^~~
+../Src/main.c:67:18: warning: variable 'evr' set but not used [-Wunused-but-set-variable]
+   67 |         uint32_t evr;
+      |                  ^~~
+../Src/main.c:66:18: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+   66 |         uint32_t err;
+      |                  ^~~
+../Src/main.c:65:27: warning: variable 'ret' set but not used [-Wunused-but-set-variable]
+   65 |         HAL_StatusTypeDef ret;
+      |                           ^~~
+../Src/main.c: In function 'main':
+../Src/main.c:113:23: warning: unused variable 'sda' [-Wunused-variable]
+  113 |         GPIO_PinState sda = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9);
+      |                       ^~~
+../Src/main.c:112:23: warning: unused variable 'scl' [-Wunused-variable]
+  112 |         GPIO_PinState scl = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8);
+      |                       ^~~
+../Src/main.c: In function 'DDR5_I3C_HAL_Send_SETAASA_Polling':
+../Src/main.c:82:1: warning: control reaches end of non-void function [-Wreturn-type]
+   82 | }
+      | ^
 arm-none-eabi-gcc -o "1_GPIO.elf" @"objects.list"   -mcpu=cortex-m33 -T"C:\Users\Xavi\Documents\FW\DDR5_FW\1_GPIO\STM32H563ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="1_GPIO.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: 1_GPIO.elf
  
 arm-none-eabi-size  1_GPIO.elf 
 arm-none-eabi-objdump -h -S 1_GPIO.elf  > "1_GPIO.list"
    text	   data	    bss	    dec	    hex	filename
-  13660	     92	   1916	  15668	   3d34	1_GPIO.elf
+  19724	    112	   2192	  22028	   560c	1_GPIO.elf
 Finished building: default.size.stdout
  
 Finished building: 1_GPIO.list
  
-20:09:27 **** Incremental Build of configuration Debug for project 1_GPIO ****
+21:38:01 **** Incremental Build of configuration Debug for project 1_GPIO ****
 make -j16 all 
 arm-none-eabi-size  1_GPIO.elf 
    text	   data	    bss	    dec	    hex	filename
-  13660	     92	   1916	  15668	   3d34	1_GPIO.elf
-Finished building: default.size.stdout
- 
-20:10:00 **** Incremental Build of configuration Debug for project 1_GPIO ****
-make -j16 all 
-arm-none-eabi-size  1_GPIO.elf 
-   text	   data	    bss	    dec	    hex	filename
-  13660	     92	   1916	  15668	   3d34	1_GPIO.elf
+  19724	    112	   2192	  22028	   560c	1_GPIO.elf
 Finished building: default.size.stdout
  

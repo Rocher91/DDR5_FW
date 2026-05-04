@@ -1,0 +1,8 @@
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_lptim.h:728:26:LL_LPTIM_IsEnabled	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:1968:22:LL_APB1_GRP2_ForceReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2055:22:LL_APB1_GRP2_ReleaseReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2831:22:LL_APB3_GRP1_ForceReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2868:22:LL_APB3_GRP1_ReleaseReset	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_lptim.c:93:13:LL_LPTIM_DeInit	24	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_lptim.c:152:6:LL_LPTIM_StructInit	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_lptim.c:170:13:LL_LPTIM_Init	24	static

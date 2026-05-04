@@ -10,7 +10,30 @@ extern "C" {
 #include "stm32h5xx_ll_gpio.h"
 #include "stm32h5xx_ll_exti.h"
 #include "stm32h5xx_ll_system.h"
+#include "stm32h5xx_ll_i2c.h"
+#include "stm32h5xx_ll_i3c.h"
+#include "stm32h5xx_ll_usart.h"
+#include "stm32h5xx_hal.h"
+#include "stm32h5xx_hal_i3c.h"
 #include "nhd0420_i2c.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+
+#define DDR5_I3C_SCAN_MAX_DEVICES   16U
+#define DDR5_I3C_CTRL_BUF_SIZE	32U
+#define Broadcast_SETAASA 0x29
+
+
+extern I3C_HandleTypeDef hi3c1;
+
+typedef struct
+{
+    uint8_t count;
+    uint8_t addr[DDR5_I3C_SCAN_MAX_DEVICES];
+} DDR5_I3C_ScanResult_t;
+
 
 /* =========================================================
    Board identification
@@ -33,6 +56,15 @@ extern "C" {
 /* =========================================================
    I3C bus (DDR5 sideband)
    ========================================================= */
+
+typedef enum
+{
+    I3C_OK        = 0,
+    I3C_ERR_BUSY  = -1,
+    I3C_ERR_NACK  = -2,
+    I3C_ERR_TO    = -3
+
+} DDR5_I3C_Status_t;
 
 #define I3C1_SCL_PORT GPIOB
 #define I3C1_SCL_PIN  LL_GPIO_PIN_8
@@ -269,6 +301,8 @@ static inline void DDR5_GPIO_ClocksEnable(void)
 #define TRIG_IN_OFF()   LL_GPIO_ResetOutputPin(TRIGGER_IN_PORT, TRIGGER_IN_PIN)
 #define TRIG_OUT_OFF()  LL_GPIO_ResetOutputPin(TRIGGER_OUT_PORT, TRIGGER_OUT_PIN)
 
+
+#define ERROR_LED()  LL_GPIO_TogglePin(LED_FAIL_PORT, LED_FAIL_PIN)
 /* =========================================================
    Shift register helpers
    ========================================================= */
@@ -322,7 +356,8 @@ void I2C_Scan(I2C_TypeDef *I2Cx);
 /* =========================================================
    Board init functions
    ========================================================= */
-
+int8_t DDR5_I3C_LegacyI2C_Ping(uint8_t addr_7bit);
+void DDR5_I3C1_Init(void);
 void DDR5_GPIO_Init(void);
 void DDR5_EXTI_Init(void);
 void DDR5_IRQ_Init(void);
@@ -364,6 +399,11 @@ void MX_I2C1_Init(void);
 int I2C_WriteBytes(I2C_TypeDef *I2Cx, uint8_t addr, uint8_t *data, uint8_t size);
 void DDR5_I2C4_Init(void);
 void DDR5_I2C_Scan_With_LCD(I2C_TypeDef *I2Cx, nhd0420_t *lcd, const char *bus_name);
+int8_t DDR5_I3C_LegacyI2C_Ping(uint8_t addr_7bit);
+void DDR5_I3C_LegacyI2C_Scan(DDR5_I3C_ScanResult_t *result);
+void DDR5_I3C_Scan_PrintUART(const DDR5_I3C_ScanResult_t *result);
+HAL_StatusTypeDef DDR5_I3C_HAL_Send_SETAASA_Polling(void);
+void DDR5_I3C1_HAL_State_Init(void);
 
 #ifdef __cplusplus
 }

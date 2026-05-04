@@ -1,0 +1,8 @@
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:279:19:HAL_GTZC_TZSC_ConfigPeriphAttributes	10
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:388:19:HAL_GTZC_TZSC_GetConfigPeriphAttributes	20
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:556:19:HAL_GTZC_TZSC_MPCWM_ConfigMemAttributes	21
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:718:19:HAL_GTZC_TZSC_MPCWM_GetConfigMemAttributes	12
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:898:19:HAL_GTZC_MPCBB_ConfigMem	16
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:1025:19:HAL_GTZC_MPCBB_GetConfigMem	12
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:1147:19:HAL_GTZC_MPCBB_ConfigMemAttributes	38
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_gtzc.c:1321:19:HAL_GTZC_MPCBB_GetConfigMemAttributes	28

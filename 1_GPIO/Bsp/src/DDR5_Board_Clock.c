@@ -8,21 +8,30 @@
 #include "DDR5_Board.h"
 
 #include "stm32h5xx_ll_bus.h"
+#include "stm32h5xx_ll_gpio.h"
 #include "stm32h5xx_ll_rcc.h"
 #include "stm32h5xx_ll_system.h"
 #include "stm32h5xx_ll_utils.h"
 #include "stm32h5xx_ll_pwr.h"
+#include "stm32h5xx_ll_i3c.h"
 #include "system_stm32h5xx.h"
+#include "stm32h5xx_hal.h"
+#include "stm32h5xx_hal_i3c.h"
 #include <stdint.h>
 //#include "stm32h5xx_ll_flash.h"
 
+
+static void delay_ms(uint32_t ms)
+{
+    for (volatile uint32_t i = 0; i < (SystemCoreClock / 1000U) * ms / 5; i++);
+}
 /*
  * Clock plan
  * ----------
  * HSI = 64 MHz
  *
  * PLL1 -> SYSCLK = 128 MHz
- * PLL3 -> I3C1 kernel clock = 80 MHz
+ * PLL3 -> I3C1 kernel clock = 160 MHz
  *
  * I2C1  kernel clock = HSI
  * USART3 kernel clock = HSI
@@ -40,7 +49,7 @@
 
 /* PLL3: dedicated to I3C1 */
 #define DDR5_PLL3_M               4U
-#define DDR5_PLL3_N               10U
+#define DDR5_PLL3_N               20U
 #define DDR5_PLL3_P               2U
 #define DDR5_PLL3_Q               2U
 #define DDR5_PLL3_R               2U
@@ -457,8 +466,179 @@ static void DDR5_PLL3_Config(void)
     {
     }
 }
+void DDR5_I3C1_HAL_State_Init(void)
+{
+    I3C_FifoConfTypeDef fifo = {0};
+    I3C_CtrlConfTypeDef ctrl = {0};
+
+    /* =========================================================
+	 * 1) Enable clocks
+	 * ========================================================= */
+	LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOB);
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I3C1);
+
+	/* =========================================================
+	 * 2) PB8 = I3C1_SCL, PB9 = I3C1_SDA
+	 * AF3 for I3C1
+	 * First stage: internal pull-up during startup
+	 * ========================================================= */
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_8, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
+
+	LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_8, LL_GPIO_AF_3);
+	LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_9, LL_GPIO_AF_3);
+
+	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_8, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_9, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_8, LL_GPIO_PULL_UP);
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_9, LL_GPIO_PULL_UP);
+
+	/* =========================================================
+	 * 3) Configure I3C while disabled
+	 * ========================================================= */
+	LL_I3C_Disable(I3C1);
+
+    hi3c1.Instance = I3C1;
+    hi3c1.Mode = HAL_I3C_MODE_CONTROLLER;
 
 
+
+    hi3c1.Init.CtrlBusCharacteristic.SDAHoldTime = HAL_I3C_SDA_HOLD_TIME_1_5;
+    hi3c1.Init.CtrlBusCharacteristic.WaitTime = HAL_I3C_OWN_ACTIVITY_STATE_0;
+    hi3c1.Init.CtrlBusCharacteristic.SCLPPLowDuration = 0x04;
+    hi3c1.Init.CtrlBusCharacteristic.SCLI3CHighDuration = 0x04;
+    hi3c1.Init.CtrlBusCharacteristic.SCLODLowDuration = 0x2E;
+    hi3c1.Init.CtrlBusCharacteristic.SCLI2CHighDuration = 0x00;
+    hi3c1.Init.CtrlBusCharacteristic.BusFreeDuration = 0x1A;
+    hi3c1.Init.CtrlBusCharacteristic.BusIdleDuration = 0x7E;
+
+
+    if (HAL_I3C_Init(&hi3c1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    fifo.RxFifoThreshold = HAL_I3C_RXFIFO_THRESHOLD_1_4;
+    fifo.TxFifoThreshold = HAL_I3C_TXFIFO_THRESHOLD_1_4;
+    fifo.ControlFifo = HAL_I3C_CONTROLFIFO_DISABLE;
+    fifo.StatusFifo = HAL_I3C_STATUSFIFO_DISABLE;
+
+    if (HAL_I3C_SetConfigFifo(&hi3c1, &fifo) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    ctrl.DynamicAddr = 0;
+    ctrl.StallTime = 0x00;
+    ctrl.HotJoinAllowed = DISABLE;
+    ctrl.ACKStallState = DISABLE;
+    ctrl.CCCStallState = DISABLE;
+    ctrl.TxStallState = DISABLE;
+    ctrl.RxStallState = DISABLE;
+    ctrl.HighKeeperSDA = DISABLE;
+
+    if (HAL_I3C_Ctrl_Config(&hi3c1, &ctrl) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    I3C1->CFGR |= I3C_CFGR_EN;
+
+    if ((I3C1->CFGR & 0x01U) == 0)
+    {
+        Error_Handler();
+    }
+
+}
+
+void DDR5_I3C1_Init(void)
+{
+    /* =========================================================
+     * 1) Enable clocks
+     * ========================================================= */
+    LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_GPIOB);
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I3C1);
+
+    /* =========================================================
+     * 2) PB8 = I3C1_SCL, PB9 = I3C1_SDA
+     * AF3 for I3C1
+     * First stage: internal pull-up during startup
+     * ========================================================= */
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_8, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_9, LL_GPIO_MODE_ALTERNATE);
+
+    LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_8, LL_GPIO_AF_3);
+    LL_GPIO_SetAFPin_8_15(GPIOB, LL_GPIO_PIN_9, LL_GPIO_AF_3);
+
+    LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_8, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+    LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_9, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_8, LL_GPIO_PULL_UP);
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_9, LL_GPIO_PULL_UP);
+
+    /* =========================================================
+     * 3) Configure I3C while disabled
+     * ========================================================= */
+    LL_I3C_Disable(I3C1);
+
+    LL_I3C_SetMode(I3C1, LL_I3C_MODE_CONTROLLER);
+    LL_I3C_SetDataHoldTime(I3C1, LL_I3C_SDA_HOLD_TIME_1_5);
+    LL_I3C_SetControllerActivityState(I3C1, LL_I3C_OWN_ACTIVITY_STATE_0);
+
+    /* CubeMX timing values */
+    LL_I3C_ConfigClockWaveForm(I3C1, 0x002E0404);
+    LL_I3C_SetCtrlBusCharacteristic(I3C1, 0x001A007E);
+
+    LL_I3C_DisableHJAck(I3C1);
+
+    LL_I3C_SetRxFIFOThreshold(I3C1, LL_I3C_RXFIFO_THRESHOLD_1_4);
+    LL_I3C_SetTxFIFOThreshold(I3C1, LL_I3C_TXFIFO_THRESHOLD_1_4);
+
+    LL_I3C_DisableControlFIFO(I3C1);
+    LL_I3C_DisableStatusFIFO(I3C1);
+
+    LL_I3C_SetOwnDynamicAddress(I3C1, 0x00);
+    LL_I3C_EnableOwnDynAddress(I3C1);
+
+    LL_I3C_SetStallTime(I3C1, 0x00);
+
+    LL_I3C_DisableStallACK(I3C1);
+    LL_I3C_DisableStallParityCCC(I3C1);
+    LL_I3C_DisableStallParityData(I3C1);
+    LL_I3C_DisableStallTbit(I3C1);
+
+    LL_I3C_DisableHighKeeperSDA(I3C1);
+
+    /* =========================================================
+     * 8) Enable I3C peripheral
+     * ========================================================= */
+    LL_I3C_Enable(I3C1);
+
+    delay_ms(1);
+
+    /* =========================================================
+     * 9) Second GPIO stage: no internal pull
+     * External / bus pull-up takes over
+     * ========================================================= */
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_8, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_9, LL_GPIO_PULL_NO);
+
+    /* =========================================================
+     * 10) NVIC + I3C interrupts
+     * ========================================================= */
+    //NVIC_SetPriority(I3C1_EV_IRQn,NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    //NVIC_EnableIRQ(I3C1_EV_IRQn);
+
+    //NVIC_SetPriority(I3C1_ER_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    //NVIC_EnableIRQ(I3C1_ER_IRQn);
+
+    //LL_I3C_EnableIT_FC(I3C1);
+    //LL_I3C_EnableIT_CFNF(I3C1);
+    //LL_I3C_EnableIT_RXFNE(I3C1);
+    //LL_I3C_EnableIT_TXFNF(I3C1);
+    //LL_I3C_EnableIT_ERR(I3C1);
+}
 
 void DDR5_Clock_Init(void)
 {
@@ -478,9 +658,9 @@ void DDR5_Clock_Init(void)
 
     /* Peripheral kernel clocks
      */
-    //LL_RCC_SetI3CClockSource(LL_RCC_I3C1_CLKSOURCE_PLL3R);
+    LL_RCC_SetI3CClockSource(LL_RCC_I3C1_CLKSOURCE_PLL3R);
     LL_RCC_SetI2CClockSource(LL_RCC_I2C1_CLKSOURCE_HSI);
-    LL_RCC_SetI2CClockSource(LL_RCC_I2C4_CLKSOURCE_HSI);
+    //LL_RCC_SetI2CClockSource(LL_RCC_I2C4_CLKSOURCE_HSI);
     LL_RCC_SetUSARTClockSource(LL_RCC_USART3_CLKSOURCE_HSI);
 
     /* SYSCLK <- PLL1 */
@@ -493,3 +673,5 @@ void DDR5_Clock_Init(void)
     SysTick_Config(DDR5_SYSCLK_FREQ_HZ / 1000U);
 
 }
+
+

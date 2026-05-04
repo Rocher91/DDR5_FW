@@ -1,0 +1,111 @@
+
+#include "nhd0420_i2c.h"
+#include "DDR5_Board.h"
+
+
+volatile uint32_t g_ms_ticks = 0;
+static nhd0420_t g_lcd;
+
+
+#include "DDR5_Time.h"
+
+void SysTick_Handler(void)
+{
+    DDR5_Time_IncTick();
+}
+
+DDR5_I3C_ScanResult_t scan;
+I3C_HandleTypeDef hi3c1;
+static I3C_XferTypeDef g_setaasa_ctx;
+static uint32_t g_setaasa_ctrl_buf[DDR5_I3C_CTRL_BUF_SIZE];
+static I3C_CCCTypeDef g_setaasa_ccc[] =
+{
+		{0x00, Broadcast_SETAASA, {NULL, 0}, LL_I3C_DIRECTION_WRITE}
+};
+
+void Error_Handler(void);
+static uint8_t g_setaasa_dummy_tx = 0;
+
+HAL_StatusTypeDef DDR5_I3C_HAL_Send_SETAASA_Polling(void)
+{
+	memset(&g_setaasa_ctx, 0, sizeof(g_setaasa_ctx));
+	memset(g_setaasa_ctrl_buf, 0, sizeof(g_setaasa_ctrl_buf));
+
+
+	g_setaasa_ctx.CtrlBuf.pBuffer = g_setaasa_ctrl_buf;
+	g_setaasa_ctx.CtrlBuf.Size = DDR5_I3C_CTRL_BUF_SIZE;
+	g_setaasa_ctx.TxBuf.pBuffer = &g_setaasa_dummy_tx;
+	g_setaasa_ctx.TxBuf.Size = 0;
+	g_setaasa_ctx.RxBuf.pBuffer = NULL;
+	g_setaasa_ctx.RxBuf.Size = 0;
+
+	if ( HAL_I3C_AddDescToFrame(&hi3c1,g_setaasa_ccc,NULL,&g_setaasa_ctx,1,I3C_BROADCAST_WITHOUT_DEFBYTE_STOP) != HAL_OK)
+	{
+	return HAL_ERROR;
+}
+	return HAL_I3C_Ctrl_TransmitCCC(&hi3c1,&g_setaasa_ctx,HAL_MAX_DELAY);
+}
+
+
+int main(void)
+{
+    DDR5_Clock_Init();
+    //DDR5_Debug_Enable_MCO_PA8(ENABLE, HSI_CLK_SEL);
+    DDR5_GPIO_Init();
+    DDR5_I2C1_Init();
+    DDR5_I2C4_Init();
+    DDR5_I3C1_Init();
+
+    DDR5_UART_Init_115200_8N1(USART3, 64000000U);
+
+    DDR5_Delay_ms(200);
+
+
+    if (nhd0420_init(&g_lcd, I2C1, 0x28U, DDR5_Delay_ms) != 0)
+	{
+		DDR5_UART_WriteString(USART3, "LCD init FAIL\r\n", 100000U);
+		while (1) {}
+	}
+
+	nhd0420_set_backlight(&g_lcd, 8);
+	nhd0420_set_contrast(&g_lcd, 40);
+	nhd0420_clear(&g_lcd);
+	//nhd0420_write_line(&g_lcd, 0, "DDR5 Test Platform");
+	DDR5_Delay_ms(1000);
+
+	if ( DDR5_I3C_HAL_Send_SETAASA_Polling() != HAL_OK)
+	{
+		/* Error_Handler() function is called when error occurs. */
+		Error_Handler();
+	}
+
+	nhd0420_clear(&g_lcd);
+
+	char line[21];
+
+	snprintf(line, sizeof(line), "Found: %u", scan.count);
+	nhd0420_write_line(&g_lcd, 0, line);
+
+	for (uint8_t i = 0; i < scan.count && i < 4; i++)
+	{
+	    snprintf(line, sizeof(line), "0x%02X", scan.addr[i]);
+	    nhd0420_write_line(&g_lcd, i + 1, line);
+	}
+
+	while (1)
+	{
+
+	}
+}
+
+void Error_Handler(void)
+{
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* Error if LED1 is slowly blinking (1 sec. period) */
+	while (1)
+	{
+		ERROR_LED();
+		DDR5_Delay_ms(1000);
+	}
+	/* USER CODE END Error_Handler_Debug */
+}

@@ -6,13 +6,109 @@
  */
 
 #include "DDR5_Board.h"
-#include <stdio.h>
-#include "stm32h5xx_ll_bus.h"
-#include "stm32h5xx_ll_gpio.h"
-#include "stm32h5xx_ll_i2c.h"
-#include "stm32h5xx_ll_usart.h"
-#include "stm32h5xx_ll_exti.h"
-#include "stm32h5xx_ll_system.h"
+#include "DDR5_Time.h"
+
+
+
+void DDR5_I3C_LegacyI2C_Scan(DDR5_I3C_ScanResult_t *result)
+{
+    if (result == NULL)
+        return;
+
+    memset(result, 0, sizeof(*result));
+
+    for (uint8_t addr = 0x08; addr < 0x78; addr++)
+    {
+        int8_t rc = DDR5_I3C_LegacyI2C_Ping(addr);
+
+        if (rc == 0)
+        {
+            if (result->count < DDR5_I3C_SCAN_MAX_DEVICES)
+            {
+                result->addr[result->count] = addr;
+                result->count++;
+            }
+        }
+
+        DDR5_Delay_ms(1);
+    }
+}
+
+
+void DDR5_I3C_Scan_PrintUART(const DDR5_I3C_ScanResult_t *result)
+{
+    char msg[40];
+
+    if (result == NULL)
+        return;
+
+    snprintf(msg, sizeof(msg), "\r\nI3C legacy scan: %u found\r\n", result->count);
+    DDR5_UART_WriteString(USART3, msg, 100000U);
+
+    for (uint8_t i = 0; i < result->count; i++)
+    {
+        snprintf(msg, sizeof(msg), "ACK 0x%02X\r\n", result->addr[i]);
+        DDR5_UART_WriteString(USART3, msg, 100000U);
+    }
+
+    if (result->count == 0)
+    {
+        DDR5_UART_WriteString(USART3, "No devices\r\n", 100000U);
+    }
+}
+
+int8_t DDR5_I3C_LegacyI2C_Ping(uint8_t addr_7bit)
+{
+    DDR5_Timeout_t to;
+    uint32_t cr;
+
+    if (addr_7bit > 0x7FU)
+        return -10;
+
+    /* Esperar bus libre */
+    DDR5_Timeout_Start(&to, 10);
+
+    /* Limpiar flags previos */
+    if (LL_I3C_IsActiveFlag_FC(I3C1))
+        LL_I3C_ClearFlag_FC(I3C1);
+
+    if (LL_I3C_IsActiveFlag_ERR(I3C1))
+        LL_I3C_ClearFlag_ERR(I3C1);
+
+    /*
+     * Legacy I2C ping:
+     * dirección 7-bit
+     * write
+     * 0 bytes
+     * STOP
+     */
+    cr =
+        ((uint32_t)(addr_7bit << 1) << I3C_CR_ADD_Pos) |
+        (0U << I3C_CR_DCNT_Pos) |
+        LL_I3C_CONTROLLER_MTYPE_PRIVATE |
+        LL_I3C_GENERATE_STOP;
+
+    WRITE_REG(I3C1->CR, cr);
+
+    LL_I3C_RequestTransfer(I3C1);
+
+    DDR5_Timeout_Start(&to, 10);
+    while (!LL_I3C_IsActiveFlag_FC(I3C1))
+    {
+        if (LL_I3C_IsActiveFlag_ERR(I3C1))
+        {
+            LL_I3C_ClearFlag_ERR(I3C1);
+            return -2;   /* NACK / bus error */
+        }
+
+        if (DDR5_Timeout_Expired(&to))
+            return -3;   /* complete timeout */
+    }
+
+    LL_I3C_ClearFlag_FC(I3C1);
+
+    return 0;            /* ACK */
+}
 
 /* --------------------------------------------------------------------------
  * Local helpers
@@ -906,6 +1002,8 @@ int8_t DDR5_I2C_Read(I2C_TypeDef *I2Cx,
     LL_I2C_ClearFlag_STOP(I2Cx);
     return 0;
 }
+
+
 
 static int DDR5_UART_WaitFlagSet(volatile const uint32_t *reg,
                                  uint32_t mask,

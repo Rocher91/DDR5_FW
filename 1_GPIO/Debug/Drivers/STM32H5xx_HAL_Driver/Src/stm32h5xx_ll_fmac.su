@@ -1,0 +1,6 @@
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_fmac.h:523:22:LL_FMAC_EnableReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_fmac.h:534:26:LL_FMAC_IsEnabledReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:762:22:LL_AHB1_GRP1_ForceReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:793:22:LL_AHB1_GRP1_ReleaseReset	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_fmac.c:61:13:LL_FMAC_Init	24	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_fmac.c:93:13:LL_FMAC_DeInit	24	static

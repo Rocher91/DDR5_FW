@@ -1,0 +1,3 @@
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_smbus_ex.c:88:19:HAL_SMBUSEx_EnableWakeUp	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_smbus_ex.c:127:19:HAL_SMBUSEx_DisableWakeUp	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_hal_smbus_ex.c:184:19:HAL_SMBUSEx_ConfigFastModePlus	16	static

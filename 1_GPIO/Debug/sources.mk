@@ -23,6 +23,7 @@ C_DEPS :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 Bsp/src \
+Drivers/STM32H5xx_HAL_Driver/Src \
 Src \
 Startup \
 

@@ -1,0 +1,30 @@
+/*
+ * DDR5_Time.c
+ *
+ *  Created on: Apr 29, 2026
+ *      Author: Xavi
+ */
+
+
+#include "DDR5_Time.h"
+
+volatile uint32_t g_ms_ticks = 0;
+
+/* Se llama desde SysTick_Handler */
+void DDR5_Time_IncTick(void)
+{
+    g_ms_ticks++;
+}
+
+uint32_t DDR5_GetTick(void)
+{
+    return g_ms_ticks;
+}
+
+void DDR5_Delay_ms(uint32_t ms)
+{
+    uint32_t start = g_ms_ticks;
+    while ((g_ms_ticks - start) < ms)
+    {
+    }
+}

@@ -1,0 +1,16 @@
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:429:22:LL_I2C_Enable	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:443:22:LL_I2C_Disable	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:475:22:LL_I2C_ConfigFilters	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:920:22:LL_I2C_SetOwnAddress1	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:931:22:LL_I2C_EnableOwnAddress1	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:942:22:LL_I2C_DisableOwnAddress1	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:1023:22:LL_I2C_SetTiming	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:1097:22:LL_I2C_SetMode	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i2c.h:2078:22:LL_I2C_AcknowledgeNextData	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:1943:22:LL_APB1_GRP1_ForceReset	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2030:22:LL_APB1_GRP1_ReleaseReset	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2831:22:LL_APB3_GRP1_ForceReset	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2868:22:LL_APB3_GRP1_ReleaseReset	1
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i2c.c:86:13:LL_I2C_DeInit	5
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i2c.c:146:13:LL_I2C_Init	2
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i2c.c:214:6:LL_I2C_StructInit	1

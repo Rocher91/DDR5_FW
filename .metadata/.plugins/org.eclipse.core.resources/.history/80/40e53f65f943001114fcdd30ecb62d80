@@ -1,0 +1,18 @@
+/*
+ * DDR5_Time.h
+ *
+ *  Created on: Apr 29, 2026
+ *      Author: Xavi
+ */
+
+#ifndef INC_DDR5_TIME_H_
+#define INC_DDR5_TIME_H_
+
+#include <stdint.h>
+
+void DDR5_Time_Init(void);
+void DDR5_Delay_ms(uint32_t ms);
+uint32_t DDR5_GetTick(void);
+
+
+#endif /* INC_DDR5_TIME_H_ */

@@ -1,0 +1,11 @@
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:1943:22:LL_APB1_GRP1_ForceReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:2030:22:LL_APB1_GRP1_ReleaseReset	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:652:22:LL_I3C_Enable	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:665:22:LL_I3C_Disable	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:704:22:LL_I3C_SetMode	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:1467:22:LL_I3C_ConfigClockWaveForm	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:1714:22:LL_I3C_SetCtrlBusCharacteristic	16	static
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_i3c.h:1743:22:LL_I3C_SetTgtBusCharacteristic	16	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i3c.c:75:13:LL_I3C_DeInit	24	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i3c.c:119:13:LL_I3C_Init	32	static
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_i3c.c:180:6:LL_I3C_StructInit	16	static

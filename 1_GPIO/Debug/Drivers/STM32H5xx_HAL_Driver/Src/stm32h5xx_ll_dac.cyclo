@@ -1,0 +1,6 @@
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_dac.h:1539:26:LL_DAC_IsEnabled	2
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:1164:22:LL_AHB2_GRP1_ForceReset	1
+C:/Users/Xavi/Documents/FW/DDR5_FW/1_GPIO/Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_bus.h:1217:22:LL_AHB2_GRP1_ReleaseReset	1
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_dac.c:178:13:LL_DAC_DeInit	1
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_dac.c:219:13:LL_DAC_Init	3
+../Drivers/STM32H5xx_HAL_Driver/Src/stm32h5xx_ll_dac.c:299:6:LL_DAC_StructInit	1
